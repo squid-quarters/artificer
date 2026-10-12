@@ -1,13 +1,14 @@
 <script lang="ts">
   import type { Card } from '#lib/model.ts';
+  import { scrollRegion } from '#lib/workbench/scroll-region.ts';
   let { before, after }: { before: Card; after: Card } = $props();
 </script>
 <section aria-label="Proposal comparison" data-testid="change-diff" class="diff">
   <div class="diff-heading"><h3>Rules text</h3><span>{before.body === after.body ? 'Unchanged' : 'Changed'}</span></div>
-  <div class="version before"><h4>Before</h4><!-- svelte-ignore a11y_no_noninteractive_tabindex (Long rules text must be scrollable from the keyboard.) -->
-    <p role="region" aria-label="Before rules text" tabindex="0" data-testid="before-rules">{before.body || 'Empty rules text'}</p></div>
-  <div class="version after"><h4>After</h4><!-- svelte-ignore a11y_no_noninteractive_tabindex (Long rules text must be scrollable from the keyboard.) -->
-    <p role="region" aria-label="After rules text" tabindex="0" data-testid="after-rules">{after.body || 'Empty rules text'}</p></div>
+  <div class="version before"><h4>Before</h4><!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions (Long rules text must be scrollable from the keyboard.) -->
+    <p role="region" aria-label="Before rules text" tabindex="0" onkeydown={scrollRegion} data-testid="before-rules">{before.body || 'Empty rules text'}</p></div>
+  <div class="version after"><h4>After</h4><!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions (Long rules text must be scrollable from the keyboard.) -->
+    <p role="region" aria-label="After rules text" tabindex="0" onkeydown={scrollRegion} data-testid="after-rules">{after.body || 'Empty rules text'}</p></div>
   <div class="variant-change"><h3>Art variant</h3><p><span>{before.variantId}</span><span aria-label="changes to"> → </span><strong>{after.variantId}</strong></p></div>
   <p class="inheritance">Template and shared symbol anchors are inherited.</p>
 </section>

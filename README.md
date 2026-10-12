@@ -57,13 +57,16 @@ npm run format:check
 npm run test:unit -w app -- --run
 cargo test --manifest-path app/src-tauri/Cargo.toml --features test-bridge
 cargo build --manifest-path app/src-tauri/Cargo.toml --features test-bridge
+npx playwright install --only-shell chromium webkit
 npm run test:e2e -w app
 ```
 
 Playwright needs its matching browser installed. E2E uses the actual Rust backend
 through a development-only bridge; production builds reject that mode. The browser
-test measures actual Chromium DOM, not a mocked text-width estimate. A native
-WebKit UI run is not automated by that test. Storybook's Kit 3 compatibility
+suite measures actual Chromium and Playwright WebKit DOM, including loaded
+Crimson Text, not mocked text-width estimates. Select one engine with
+`npm run test:e2e -w app -- --project=webkit` (or `chromium`). These headless
+engines do not constitute native Tauri WKWebView UI parity. Storybook's Kit 3 compatibility
 warnings remain tracked; build success alone does not prove all addons work.
 
 Read [AGENTS.md](AGENTS.md), [implementation and boundaries](docs/first-slice.md),

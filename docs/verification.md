@@ -112,3 +112,30 @@ See [workbench contract](workbench.md) for limits and state authority.
 The final static frontend and unbundled default native debug build pass without
 launching, signing or installing the app. The default binary rejects test mode
 before accessing an empty project folder.
+
+
+## Headless WebKit verification
+
+On the reviewed workbench baseline, Playwright WebKit passed eleven of twelve
+workflows, including 18px body metrics, fit/widow
+checks, symbols/art variants, MCP proposals, acceptance, undo and stale/draft
+guards. The long-text panel's focused ArrowDown scrolling failed. A shared
+keyboard handler fixes that behavior without changing visuals, template rules,
+native authority or schema. It handles only unmodified keys targeted at the
+region itself and preserves default propagation when the region cannot move.
+
+The configured Chromium and WebKit projects now pass **24/24 workflows** (12 per
+engine), with the temporary axe audit enabled in tested workbench states. Dense
+fixture tests explicitly assert a matching loaded Crimson Text FontFace and
+18px computed font size. The independent reviewer passed two targeted WebKit
+workflows with axe and eight isolated keyboard behavior checks. Type, lint,
+format, four TypeScript tests and eleven native regression tests also pass.
+The supported existing Playwright 1.64 toolchain supplies WebKit 27.2 / build 2370
+for macOS 26 arm64; only its matched browser runtime was downloaded into the
+temporary browser cache. No project dependency or OS package was added.
+
+This is a bundled Playwright WebKit build in a headless test harness with the
+real Rust backend through the development bridge. It does not exercise native
+Tauri WKWebView, production IPC/CSP integration, native window focus/menus, or
+prove pixel-identical rendering across engines. No native GUI was launched;
+full native parity and print/title/footer preflight remain unverified.

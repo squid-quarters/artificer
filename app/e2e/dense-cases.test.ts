@@ -49,6 +49,23 @@ for (const fixture of catalog.cases) {
       await page.getByLabel("Project folder").fill(root);
       await page.getByRole("button", { name: "Open project", exact: true }).click();
       await expect(page.getByTestId("revision")).toHaveText("Revision 1");
+      const font = await page.getByTestId("card-body").evaluate(async (el) => {
+        await document.fonts.ready;
+        const faces = await document.fonts.load('18px "Crimson Text"', "Draw one card.");
+        return {
+          family: getComputedStyle(el).fontFamily,
+          size: getComputedStyle(el).fontSize,
+          loaded: document.fonts.check('18px "Crimson Text"', "Draw one card."),
+          matchingLoadedFaces: faces.filter(
+            (face) =>
+              face.family.replace(/["']/g, "") === "Crimson Text" && face.status === "loaded",
+          ).length,
+        };
+      });
+      expect(font.family).toContain("Crimson Text");
+      expect(font.size).toBe("18px");
+      expect(font.loaded).toBe(true);
+      expect(font.matchingLoadedFaces).toBeGreaterThan(0);
       const anchor = () =>
         page.getByTestId("shared-symbol").evaluate((el) => ({
           x: (el as HTMLElement).offsetLeft,

@@ -118,6 +118,7 @@ test("workbench supports measured editor review, keyboard comparison, explicit a
     expect(await app.saved()).toEqual(original);
     const longRules = page.getByRole("region", { name: "After rules text" });
     await longRules.focus();
+    await expect(longRules).toBeFocused();
     await page.keyboard.press("ArrowDown");
     await expect.poll(() => longRules.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
     await audit(page);
@@ -143,6 +144,7 @@ test("workbench supports measured editor review, keyboard comparison, explicit a
     await expect(page.getByTestId("current-proof")).toBeVisible();
     const canvas = page.getByRole("region", { name: "Card preview canvas" });
     await canvas.focus();
+    await expect(canvas).toBeFocused();
     await page.keyboard.press("ArrowRight");
     await expect.poll(() => canvas.evaluate((el) => el.scrollLeft)).toBeGreaterThan(0);
     expect(

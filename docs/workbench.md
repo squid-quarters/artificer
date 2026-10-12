@@ -72,13 +72,15 @@ They use real Rust editor/MCP processes and the existing test-only browser bridg
 Optional accessibility auditing injects axe-core from `ARTIFICER_AXE_PATH`; it is
 an external development tool, not a new project dependency. The audit uses WCAG
 2 A/AA, 2.1 A/AA and 2.2 AA tags. Named canvas/text scroll regions intentionally
-use tabindex=0; focused native scrolling is tested rather than relying on browser
-auto-focus heuristics. Focus moves to the review heading after preview and the
+use tabindex=0; focused keyboard scrolling is tested in both browser engines. A shared handler
+supplies unmodified arrow/page/home/end scrolling for WebKit, preserves child
+controls/modifiers and allows normal propagation at region boundaries. Focus moves to the review heading after preview and the
 canvas heading after acceptance. Status/failure/stale messages are announced;
 form controls are labelled; reduced-motion preferences are respected.
 
 Screenshots can be collected with `ARTIFICER_EVIDENCE_DIR`; test fixture folders
 contain no personal card content. Screenshot files stay outside the published
-source tree. Automated checks and screenshots are Chromium evidence, not a
-screen-reader certification or native WebKit UI parity claim. The native build
+source tree. Automated checks cover Chromium and Playwright WebKit; the existing screenshots
+are Chromium evidence. Neither is screen-reader certification or full native
+Tauri WKWebView parity. The native build
 is checked without launching or taking the foreground from other projects.
