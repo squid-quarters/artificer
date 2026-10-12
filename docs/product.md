@@ -9,6 +9,10 @@ alternate-art exceptions, bleed and print output, and special frames. Human and
 agent workflows need to preserve designer intent. A comprehensive redesign using
 Mobbin and Open Design follows discovery and direction discussion.
 
+Desktop/local-first Tauri is selected; browser delivery is later feasibility
+work. Dense TCG/LCG cards lead the first workflow. The precise fixture cards,
+constraint policies and output provider remain open.
+
 ## Proposed acceptance framework — not implemented or approved
 
 | Requirement | Proposed observable behavior | Unanswered policy |

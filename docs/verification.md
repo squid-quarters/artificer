@@ -30,5 +30,5 @@ A SHA-256 check confirmed all 200 preserved regular files match the original.
 Review scope includes every allowlisted Markdown file, relative links, whitespace,
 publication-sensitive content and the entire Git ancestry. The candidate has
 fresh history independent of the source snapshot. Review results and a content
-manifest are supplied separately for approval. Passing local checks does not
-constitute publication approval.
+manifest are supplied separately for approval. The owner subsequently approved the reviewed documentation-only bootstrap.
+Source/assets remain excluded; later integration requires reviewed PRs.

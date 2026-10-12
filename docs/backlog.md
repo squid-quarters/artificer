@@ -13,7 +13,7 @@ closed, or duplicated into either tracker by this reconciliation.
 
 | Item | Origin and status | Dependency / acceptance |
 | --- | --- | --- |
-| Recovery baseline and PR bootstrap | Current discovery; documentation-only candidate prepared, remote empty | Explicit documentation publication/bootstrap decision; source/assets remain excluded |
+| Recovery baseline and PR bootstrap | Reviewed documentation-only baseline published; source snapshot stays private | Bootstrap complete; subsequent reviewed PRs; source/assets remain excluded |
 | Product and architecture confirmation | Historical phase plan + current user requirements; pending | Resolve decisions register; retain evidence labels |
 | Tracker choice | Current user; pending | Select GitHub, Paperclip, or linked roles before creating execution tickets |
 | Foundation | Historical phase 0 archive; stack present | Current checks pass where recorded; bundle delta remains historical concern |

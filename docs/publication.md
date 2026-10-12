@@ -6,9 +6,10 @@ fresh history without the source preservation snapshot as an ancestor. Original
 source and preservation copies remain unchanged and separately retained.
 
 The destination [repository](https://github.com/squid-quarters/artificer) is
-public. Bootstrap/publication approval is pending. Nothing has been pushed;
-no visibility or permission change is part of this candidate. Documentation
-publication does not authorize source or asset publication.
+public. The owner approved the clean documentation-only bootstrap, published as
+[commit 370ca99](https://github.com/squid-quarters/artificer/commit/370ca99124d43c817b4ba5c691c71e92abc9c41a).
+No visibility or permission change was made. Subsequent changes use reviewed
+PRs. Documentation publication does not authorize source or asset publication.
 
 ## Asset inventory in the preserved prototype
 

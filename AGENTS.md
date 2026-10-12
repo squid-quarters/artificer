@@ -33,10 +33,14 @@ or dependencies.
 
 ## Delivery and review
 
-This candidate is intended for a public repository, but publication approval and
-the empty-repository bootstrap decision remain pending. Do not push any branch,
-open a PR, or publish this candidate until explicitly approved. A documentation
-bootstrap does not authorize publishing the preserved prototype or assets.
+The owner approved the reviewed public documentation-only bootstrap. Subsequent
+authorized documentation changes use scoped reviewed PRs. Source/assets remain
+excluded until their publication scope is resolved. Do not publish the preserved
+prototype or assets under the documentation-only approval.
+
+Desktop/local-first Tauri and dense TCG/LCG cards are selected. Compatible stable
+dependency upgrades are authorized locally; filesystem capabilities, data/MCP
+boundaries and larger library/service alternatives still need explicit design.
 
 All subsequent integration, including documentation/design, must use a scoped PR
 with substantive independent adversarial review. Review the actual complete

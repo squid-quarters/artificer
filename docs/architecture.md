@@ -12,6 +12,13 @@ and layout. Tauri packages a shell; it does not implement storage. Effect is
 exercised only by a greeting smoke module. Vitest has client/server projects;
 Playwright checks a gallery card, and Storybook contains scaffold stories.
 
+## Selected application direction
+
+The owner selected desktop/local-first Tauri with Svelte/SvelteKit, dense TCG/LCG
+cards first, and browser delivery later if viable. Compatible stable dependency
+upgrades are authorized locally. See [upgrade matrix and sequence](upgrade.md).
+Storage, filesystem boundaries and MCP design remain proposals.
+
 ## Recovered future direction — confirmation pending
 
 Source: `openspec/config.yaml` and the archived foundation proposal.
