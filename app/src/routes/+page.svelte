@@ -5,6 +5,7 @@
   import { bridge } from '#lib/bridge.ts';
   import { candidate, type Project, type Proposal, type Validation } from '#lib/model.ts';
   import { measure } from '#lib/measure.ts';
+  import { scrollRegion } from '#lib/workbench/scroll-region.ts';
 
   let path = $state(''); let openedPath = $state(''); let showProjectForm = $state(true);
   let project = $state<Project>(); let preview = $state<Project>(); let before = $state<Project>();
@@ -132,8 +133,8 @@
     <div class="canvas-toolbar"><div><p class="eyebrow">{selected ? 'Proposal preview' : 'Card preview'}</p><h2 bind:this={canvasHeading} tabindex="-1">{card?.title ?? 'Start with a card'}</h2></div>{#if selected && preview && before}<button class="quiet small" aria-pressed={compare} onclick={() => compare = !compare} disabled={busy}>{compare ? 'Show proposed card' : 'Compare cards'}</button>{/if}</div>
     {#if error}<div class="banner error" role="alert"><strong>{conflict ? 'Preview is stale' : 'Action needs attention'}</strong><p>{error}</p>{#if conflict}<button class="quiet small" onclick={showCurrent} disabled={busy}>Return to current card</button>{:else if project && error.includes('Project is busy')}<button class="quiet small" onclick={() => guard(async () => { await bridge.recover(); notice = 'Project lock is free. Preview your change again.'; })} disabled={busy}>Check interrupted save</button>{/if}</div>{/if}
     {#if notice}<p class="notice" role="status">{notice}</p>{/if}
-    <!-- svelte-ignore a11y_no_noninteractive_tabindex (The fixed-size proof canvas needs keyboard focus for native scrolling.) -->
-    <div class="canvas" role="region" aria-label="Card preview canvas" tabindex="0">
+    <!-- svelte-ignore a11y_no_noninteractive_tabindex, a11y_no_noninteractive_element_interactions (The fixed-size proof canvas needs focus and cross-engine keyboard scrolling.) -->
+    <div class="canvas" role="region" aria-label="Card preview canvas" tabindex="0" onkeydown={scrollRegion}>
       {#if shown && card && template}<div class="proof-strip" class:comparing={compare}>
         {#if compare && before}<CardProof project={before} art={beforeArt} label="Before" detail={`Revision ${before.revision}`} />{/if}
         <CardProof project={shown} {art} label={selected ? 'Proposed' : 'Current'} detail={selected ? `Based on revision ${selected.expectedRevision}` : `${template.width} × ${template.height} logical px`} bind:bodyRef />
