@@ -1,0 +1,35 @@
+@import "@fontsource/crimson-text/400.css";
+@import "@fontsource/crimson-text/700.css";
+@import "tailwindcss";
+:root {
+  font-family: system-ui, sans-serif;
+  color: #203438;
+  background: #edf1ee;
+}
+body {
+  margin: 0;
+}
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+button {
+  cursor: pointer;
+  padding: 0.6rem 0.9rem;
+  border: 1px solid #80928f;
+  border-radius: 4px;
+  background: white;
+}
+button:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+input,
+textarea,
+select {
+  padding: 0.6rem;
+  border: 1px solid #80928f;
+  border-radius: 4px;
+}

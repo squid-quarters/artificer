@@ -1,0 +1,73 @@
+{
+  "schemaVersion": 1,
+  "revision": 1,
+  "label": "Original dense-card fixture",
+  "assets": [
+    {
+      "id": "grid",
+      "path": "assets/grid.svg",
+      "sha256": "4aafc585e3ff284ba8e4e449b62897e36443bb683ab334a567141fadafe066fd",
+      "provenance": "Original geometric fixture created for Artificer; no third-party image content"
+    },
+    {
+      "id": "rings",
+      "path": "assets/rings.svg",
+      "sha256": "a47cecfdf38ebd80326ad573c9b3f02d7a8d8796c5518091e0cc8742650e797a",
+      "provenance": "Original geometric fixture created for Artificer; no third-party image content"
+    }
+  ],
+  "templates": [
+    {
+      "id": "neutral-dense",
+      "width": 360,
+      "height": 500,
+      "body": {
+        "x": 24,
+        "y": 185,
+        "width": 312,
+        "height": 210
+      },
+      "fontPx": 18,
+      "minFontPx": 18,
+      "lastLineMinWords": 2,
+      "symbol": {
+        "id": "focus",
+        "x": 304,
+        "y": 22,
+        "glyph": "\u25c6"
+      },
+      "variants": [
+        {
+          "id": "standard",
+          "artAssetId": "grid"
+        },
+        {
+          "id": "alternate",
+          "artAssetId": "rings"
+        }
+      ],
+      "permittedOverrides": [
+        "variantId"
+      ]
+    }
+  ],
+  "cards": [
+    {
+      "id": "fixture-card",
+      "title": "Steady Focus",
+      "body": "Draw one card. You may spend one focus to keep it.\n\nAt the end of your turn, return unused focus to the supply.",
+      "templateId": "neutral-dense",
+      "variantId": "standard"
+    }
+  ],
+  "history": [],
+  "printProfile": null,
+  "symbols": [
+    {
+      "id": "focus",
+      "x": 304,
+      "y": 22,
+      "glyph": "\u25c6"
+    }
+  ]
+}

@@ -1,15 +1,16 @@
 # Publication candidate and remaining licensing decisions
 
-This candidate contains documentation only. It excludes application source,
-sample assets, dependencies, bundled skills and executable tooling. It uses
-fresh history without the source preservation snapshot as an ancestor. Original
-source and preservation copies remain unchanged and separately retained.
+The first source slice was assembled from an allowlist on the public docs
+history, with original neutral SVGs/icon and no private source-snapshot ancestors.
+Old sample assets, bundled skills, dependencies binaries and generated outputs
+remain excluded. The original prototype and preservation copies are unchanged.
 
 The destination [repository](https://github.com/squid-quarters/artificer) is
 public. The owner approved the clean documentation-only bootstrap, published as
 [commit 370ca99](https://github.com/squid-quarters/artificer/commit/370ca99124d43c817b4ba5c691c71e92abc9c41a).
 No visibility or permission change was made. Subsequent changes use reviewed
-PRs. Documentation publication does not authorize source or asset publication.
+PRs. The owner subsequently approved the clean first source slice and original
+neutral fixtures through reviewed PRs; old source/assets are not covered.
 
 ## Asset inventory in the preserved prototype
 
@@ -46,5 +47,5 @@ do not establish licenses for the copied samples.
 
 Exact locked Rust dependency licenses were not established from available cache
 versions. A future source/distribution review must resolve applicable notices
-for the actual shipped packages and assets. No dependency binaries, font files,
-lockfiles or manifests are included in this documentation candidate.
+for the actual shipped packages and assets. Source manifests and lockfiles now capture the verified stable cohort. Dependency
+binaries/font files are not checked in. No project license is selected.

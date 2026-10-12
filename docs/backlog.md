@@ -13,21 +13,28 @@ closed, or duplicated into either tracker by this reconciliation.
 
 | Item | Origin and status | Dependency / acceptance |
 | --- | --- | --- |
-| Recovery baseline and PR bootstrap | Reviewed documentation-only baseline published; source snapshot stays private | Bootstrap complete; subsequent reviewed PRs; source/assets remain excluded |
-| Product and architecture confirmation | Historical phase plan + current user requirements; pending | Resolve decisions register; retain evidence labels |
+| Recovery baseline and PR bootstrap | Reviewed documentation-only baseline published; source snapshot stays private | Bootstrap complete; subsequent reviewed PRs; preserved prototype/assets remain excluded |
+| Product and architecture confirmation | Selected architecture implemented in first slice; remaining policy pending | Resolve decisions register; retain evidence labels |
 | Tracker choice | Current user; pending | Select GitHub, Paperclip, or linked roles before creating execution tickets |
 | Foundation | Historical phase 0 archive; stack present | Current checks pass where recorded; bundle delta remains historical concern |
-| Card model and shared render path | Historical phase 1; absent | Confirm schema/storage/renderer; acceptance fixtures |
-| Bidirectional authoring | Historical phase 2; absent | Confirm model; conflict and external-write behavior |
-| CLI | Historical phase 3; absent | Shared core; approved command and filesystem contract |
-| MCP constraint authoring | Historical phase 4 + current core requirement; absent | Constraint discovery, mutation policy, structured diagnostics; sequence reconsideration pending |
-| Text fit and widow policy | Current user; absent | Define failure/override rules; rendered long-text fixtures |
-| Shared symbol anchors and alternate-art exceptions | Current user; absent | Define invariants and named exceptions; cross-type fixtures |
+| Card model and shared render path | First slice: single-card schema/DOM path; broader library pending | Confirm schema/storage/renderer; acceptance fixtures |
+| Bidirectional authoring | First slice: shared proposal/acceptance + hashes; multi-card pending | Confirm model; conflict and external-write behavior |
+| CLI | MCP stdio executable implemented; general CLI pending | Shared core; approved command and filesystem contract |
+| MCP constraint authoring | First slice: proposals/constraints/editor reports; export pending | Constraint discovery, mutation policy, structured diagnostics; sequence reconsideration pending |
+| Text fit and widow policy | First slice: body overflow + explicit fixture widow rule | Product-wide policy/overrides unresolved; actual rendered fixtures |
+| Shared symbol anchors and alternate-art exceptions | First slice: same anchor across named art variants | Cross-type fixtures and intentional geometry exceptions pending |
 | Bleed/print pipeline | Current user + earlier README export intent; absent | Resolve dimensional inconsistency and printer/output profile |
 | Special frames and templates | Current user + historical phase 5; absent | Choose first card family and frame fixtures |
 | Comprehensive redesign | Current user; pending direction discussion | Mobbin/Open Design research -> reviewed brief -> scoped design PRs |
-| Regression and desktop completion | Historical phase 5; absent beyond smoke tests | Golden renders, agent/human parity; Tauri integration/build validation |
+| Regression and desktop completion | First slice: native/browser regressions; wider parity pending | Golden renders, agent/human parity; Tauri integration/build validation |
 
-The original phase plan put MCP fourth. The current requirement makes it core;
-reordering around an early end-to-end MCP slice is a **proposal**, not an approved
-schedule. There are no invented issue numbers, estimates or completion claims.
+The original phase plan put MCP fourth. The owner approved the early end-to-end
+MCP slice; broader phase ordering remains a proposal. There are no invented issue numbers, estimates or completion claims.
+
+## First source slice
+
+The approved architecture is implemented for one card per project with original
+neutral fixtures. MCP proposals, actual body/symbol validation, editor acceptance,
+revision/content-hash checks and undo are covered by native and browser tests.
+Multiple-card operations, print output, special frames, asset import and broader
+MCP preview/export remain follow-up work. Recovery counts above are historical.

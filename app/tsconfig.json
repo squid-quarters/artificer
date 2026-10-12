@@ -1,0 +1,18 @@
+{
+  "extends": "$app/tsconfig",
+  "include": ["src", "e2e", ".storybook", "*"],
+  "exclude": ["src/service-worker"],
+  "compilerOptions": {
+    "allowJs": true,
+    "checkJs": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "sourceMap": true,
+    "strict": true,
+    "moduleResolution": "bundler"
+  }
+  // #lib subpath imports are declared in this workspace's package.json.
+  // TypeScript does not merge include/exclude arrays from the base config.
+}
