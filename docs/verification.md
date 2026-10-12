@@ -85,3 +85,30 @@ regressions pass. The static frontend build runs as part of browser acceptance.
 No runtime/schema/dependency/native permission/media changes are made by this
 preparation, so prior packaging/Storybook limitations remain. See
 [dense acceptance](dense-acceptance.md) for environment and coverage limits.
+
+
+## Approved A+C workbench
+
+The redesigned workspace retains the native/schema/constraint architecture.
+Twelve real-backend browser/MCP tests pass: the eight prior cases plus four
+workbench workflows. Coverage includes before/after text/art review, keyboard
+text/canvas scrolling, guarded acceptance and undo, an actual second editor's
+measured commit, proposal replacement, failed-open clearing, and preservation
+of an unrelated human draft when accepting an agent change.
+
+Axe-core 4.14.0 was installed only in a temporary audit folder and injected via
+`ARTIFICER_AXE_PATH`. The WCAG 2 A/AA, 2.1 A/AA and 2.2 AA-tagged rules report
+zero violations in the tested empty, editing, failing, comparison, stale, narrow
+and failed-open states. This is bounded automated evidence, not screen-reader
+or native WebKit certification. Six original screenshot states were inspected.
+
+Type/lint/format checks, four TypeScript tests and eleven native regressions
+pass. Storybook builds with the previously recorded Kit 3 compatibility/large
+chunk warnings. Independent code/design review found and rechecked dirty-draft
+retention and explicit keyboard scrolling issues; the reviewer independently
+passed two targeted workbench tests with the accessibility audit enabled.
+See [workbench contract](workbench.md) for limits and state authority.
+
+The final static frontend and unbundled default native debug build pass without
+launching, signing or installing the app. The default binary rejects test mode
+before accessing an empty project folder.

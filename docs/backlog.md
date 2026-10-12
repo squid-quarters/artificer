@@ -25,7 +25,7 @@ closed, or duplicated into either tracker by this reconciliation.
 | Shared symbol anchors and alternate-art exceptions | First slice: same anchor across named art variants | Cross-type fixtures and intentional geometry exceptions pending |
 | Bleed/print pipeline | Current user + earlier README export intent; absent | Resolve dimensional inconsistency and printer/output profile |
 | Special frames and templates | Current user + historical phase 5; absent | Choose first card family and frame fixtures |
-| Comprehensive redesign | Current user; pending direction discussion | Mobbin/Open Design research -> reviewed brief -> scoped design PRs |
+| Workbench design | A+C selected; single-card workbench/proposal review implemented | Existing constraints/authority retained; broader redesign remains scoped follow-up |
 | Regression and desktop completion | First slice: native/browser regressions; wider parity pending | Golden renders, agent/human parity; Tauri integration/build validation |
 
 The original phase plan put MCP fourth. The owner approved the early end-to-end
@@ -48,3 +48,11 @@ single-card slice without changing its schema or acceptance authority. The
 are consultation proposals. Print/special-frame, multi-card, production-policy
 and comprehensive redesign rows above remain open. No execution tickets or
 tracker migration are created by these documents.
+
+
+## Approved A+C workbench
+
+[Card workbench](workbench.md) implements the selected project/canvas/inspector
+layout, before/after proposal review and visible stale-preview handling. This
+does not resolve print profiles, production widow/repair policy, licensing,
+tracker choice or multi-card/special-frame scope.

@@ -4,7 +4,9 @@ Artificer is desktop/local-first card layout software for TCG/LCG designers,
 with broader card workflows planned. This first source slice implements one
 portable dense-card project, actual rendered body-text checks, shared symbols,
 named art variants, revision-checked persistence, editor acceptance and undo.
-Local stdio MCP authors pending changes through that same pipeline.
+Local stdio MCP authors pending changes through that same pipeline. The approved
+[card workbench](docs/workbench.md) places project/proposal context beside a large
+card canvas and rules/template inspector, with explicit before/after review.
 
 ## First-slice scope
 

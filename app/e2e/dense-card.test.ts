@@ -55,7 +55,7 @@ test("MCP proposal → actual rendered validation → editor acceptance → stal
       cardId: "fixture-card",
       body: overflow,
     });
-    await page.getByRole("button", { name: "Preview overflow", exact: true }).click();
+    await page.getByRole("button", { name: "Preview overflow" }).click();
     await expect(page.getByTestId("validation-status")).toHaveText("Validation fail");
     await expect(page.getByRole("button", { name: "Accept preview", exact: true })).toBeDisabled();
     expect(await readFile(join(root, "project.artificer.json"), "utf8")).toBe(original);
@@ -73,7 +73,7 @@ test("MCP proposal → actual rendered validation → editor acceptance → stal
       cardId: "fixture-card",
       body: "Draw one card.\nFocus.",
     });
-    await page.getByRole("button", { name: "Preview widow", exact: true }).click();
+    await page.getByRole("button", { name: "Preview widow" }).click();
     await expect(page.getByTestId("validation-status")).toHaveText("Validation fail");
     await expect(page.getByRole("button", { name: "Accept preview", exact: true })).toBeDisabled();
     const widowReport = (await tool("get_proposal", { id: "widow" })).structuredContent.validation;
@@ -87,7 +87,7 @@ test("MCP proposal → actual rendered validation → editor acceptance → stal
       body: "Gain two focus.",
       variantId: "alternate",
     });
-    await page.getByRole("button", { name: "Preview valid", exact: true }).click();
+    await page.getByRole("button", { name: "Preview valid" }).click();
     await expect(page.getByTestId("validation-status")).toHaveText("Validation pass");
     expect(await anchor()).toEqual(symbolBefore);
     await page.getByRole("button", { name: "Accept preview", exact: true }).click();

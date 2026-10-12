@@ -1,6 +1,8 @@
-# Desktop workspace directions — consultation draft
+# Desktop workspace directions — selected A+C, broader choices open
 
-These are three application workflow proposals. They do not select the card
+The owner approved A with C's proposal-review treatment. B remains a future
+proposal. The [implemented workbench](workbench.md) stays within single-card scope.
+These directions do not select the card
 frame's aesthetics, replace the portable JSON/Rust/stdin MCP architecture, or
 implement a redesign. Local project selection, measured diagnostics, explicit
 editor acceptance, revision identity and undo remain required in every direction.
@@ -51,9 +53,9 @@ these examples. This research is not adopting upstream skill instructions.
 | B — Data and proof desk | Future record grid left/center; selected-card proof right; diagnostics grouped by field/card; explicit proposal changes | Helps repeated dense-card authoring; depends on a future multi-card scope and can compress the preview | First sketch uses read-only synthetic rows only; actual library/batch implementation requires separate consultation |
 | C — Review workspace | Proposal queue left; before/after preview center; diagnostic evidence and acceptance right; history below | Strongest focus on supervising agents; direct layout editing is a secondary mode | Single-card proposal review sketch with unchanged acceptance authority and undo |
 
-Recommendation for discussion: A as the primary desktop workbench, borrowing C's
-proposal review treatment. B is a later candidate if bulk authoring becomes the
-first priority. This is a recommendation, not a selected implementation.
+Selected direction: A as the primary desktop workbench, borrowing C's proposal
+review treatment. The owner explicitly approved proceeding. B remains a later
+candidate if bulk authoring becomes the first priority.
 
 A common state sequence is required regardless of visual direction:
 
@@ -74,7 +76,8 @@ body/symbol checks only, not export approval.
 
 ## Choices that actually gate the next work
 
-Choose A, B or C (or A with C's review treatment) before broad redesign work.
+A+C is selected; larger library/batch or special-frame work still needs scoped
+consultation.
 Confirm whether Open Design means the linked project before any tool adoption.
 Select a first output target and real constraint policy using the
 [constraint matrix](constraint-matrix.md). Synthetic tests can proceed while those
