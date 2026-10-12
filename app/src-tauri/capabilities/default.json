@@ -1,0 +1,17 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "editor",
+  "description": "Local editor commands only; no generic filesystem or shell access",
+  "windows": ["main"],
+  "permissions": [
+    "core:default",
+    "allow-open-project",
+    "allow-read-project",
+    "allow-list-proposals",
+    "allow-read-asset",
+    "allow-record-validation",
+    "allow-accept-proposal",
+    "allow-editor-proposal",
+    "allow-recover-lock"
+  ]
+}

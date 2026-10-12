@@ -3,8 +3,9 @@
 ## Scope and truth
 
 Read `README.md` and all files in `docs/` before proposing implementation.
-This repository candidate contains documentation only. Source and assets were
-preserved separately and are not present in its tree or history.
+The reviewed first source slice contains original neutral fixtures and a
+single-card editor/MCP pipeline. Old prototype assets and private preservation
+history remain excluded. Read `docs/first-slice.md` before changing its boundaries.
 
 Distinguish verified implementation, recovered historical intent, current product
 requirements, and new proposals. Historical foundation checkboxes are reports,
@@ -25,22 +26,23 @@ trackers, rewrite historical records, deploy, change permissions, create
 credentials, or begin broad redesign without the requested direction discussion.
 
 Recovered OpenSpec notes describe existing conventions and planned phases.
-Those source files and bundled skills are not included here. When source is
-introduced through a reviewed PR, inspect its actual instructions and evidence
-before applying them. Keep application UI design separate from card-template
+The old prototype and bundled skills are not included here. Inspect current
+source instructions and evidence before applying recovered conventions. Keep application UI design separate from card-template
 output design. Mobbin and Open Design research are inputs, not approved patterns
 or dependencies.
 
 ## Delivery and review
 
 The owner approved the reviewed public documentation-only bootstrap. Subsequent
-authorized documentation changes use scoped reviewed PRs. Source/assets remain
-excluded until their publication scope is resolved. Do not publish the preserved
-prototype or assets under the documentation-only approval.
+authorized changes use scoped reviewed PRs. The owner approved this clean source
+slice with original neutral fixtures.
+Do not publish the preserved prototype, its unattributed assets or its ancestry.
+No project license has been selected.
 
 Desktop/local-first Tauri and dense TCG/LCG cards are selected. Compatible stable
-dependency upgrades are authorized locally; filesystem capabilities, data/MCP
-boundaries and larger library/service alternatives still need explicit design.
+dependency upgrades and the architecture in `docs/first-slice.md` are approved.
+Larger library/service alternatives and expanding filesystem or MCP authority
+require explicit design.
 
 All subsequent integration, including documentation/design, must use a scoped PR
 with substantive independent adversarial review. Review the actual complete
@@ -50,5 +52,7 @@ resolve missing product decisions or authorize deployment.
 
 For documentation changes, check relative links, Markdown formatting, full-tree
 publication scope, and Git ancestry. Do not add tests that merely mirror prose.
-Application checks recorded in `docs/verification.md` describe the separately
-preserved prototype; they cannot run in this documentation-only tree.
+Use the source commands in `README.md`; old recovery checks in
+`docs/verification.md` describe the preserved prototype. Run native regressions,
+actual browser/MCP acceptance, publication-tree/ancestry checks and independent
+adversarial review. Do not accept mock width estimates as text-fit evidence.

@@ -1,24 +1,26 @@
 # Desktop-first stable upgrade proposal — 12 October 2026
 
 User confirmed public documentation bootstrap, desktop/local-first Tauri, browser
-later if viable, and dense TCG/LCG cards first. Source/assets remain unpublished;
-this upgrade is an isolated local experiment pending source-publication scope.
+later if viable, and dense TCG/LCG cards first. The verified upgrade is now carried into the approved clean source slice with
+original fixtures; the old prototype/assets remain excluded.
 No project license is selected.
 
-## Target architecture and unresolved alternatives
+## Upgrade-stage alternatives and subsequent selection
 
 Use a static SvelteKit SPA in Tauri's webview, SSR disabled. Kit 3 config moves
 into the Vite plugin; no SvelteKit server runs inside the desktop application.
 Fix `frontendDist` to `../build`, relative to `src-tauri`. Preserve native
 capabilities; add no filesystem/network/shell grants in this upgrade.
 
-Project filesystem access needs a designed boundary: selected project root,
+At the upgrade stage, filesystem access needed a designed boundary: selected project root,
 canonical path/symlink checks, allowlisted operations and atomic/revision-checked
 writes are proposed, not implemented. Compare scoped Rust commands versus the
 Tauri filesystem plugin before selection. JSON-file storage versus SQLite,
 TS domain logic versus Rust service ownership, MCP stdio versus authenticated
 loopback HTTP, and sidecar versus in-process bridge need explicit decisions.
-Browser delivery remains later feasibility work, not a current backend/service.
+The owner subsequently selected portable JSON/owned assets, project-scoped Rust
+commands and local stdio MCP; see `first-slice.md` for the implemented boundary.
+Browser delivery remains later feasibility work.
 
 ## Verified target dependency matrix
 
@@ -70,7 +72,7 @@ Sources: [Tauri SvelteKit integration](https://v2.tauri.app/start/frontend/svelt
 [Tauri crate metadata](https://crates.io/api/v1/crates/tauri/2.12.3),
 [Tauri CLI metadata](https://registry.npmjs.org/@tauri-apps/cli/2.12.2).
 
-## Migration progress
+## Isolated prototype migration evidence
 
 An isolated source copy passed the Kit 2.70.3 staging type/unit/build checks,
 then migrated to Kit 3.0.1 and adapter 4 with Vite configuration, `#lib` subpath
@@ -90,5 +92,5 @@ errors. This bounded smoke check does not validate every Storybook addon or Kit
 mock; broader integration compatibility remains a recorded risk. No warnings were
 suppressed. Generated Storybook output is excluded from Git/format checks.
 
-Source/assets remain unpublished. No code upgrade has been integrated into the
-public documentation-only repository. Original prototype files remain unchanged.
+The verified upgrade is carried into the clean first source slice with original
+fixtures. The old prototype/assets remain unpublished and unchanged.

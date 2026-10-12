@@ -1,0 +1,11 @@
+# Automatically generated - DO NOT EDIT!
+
+[[permission]]
+identifier = "allow-recover-lock"
+description = "Enables the recover_lock command without any pre-configured scope."
+commands.allow = ["recover_lock"]
+
+[[permission]]
+identifier = "deny-recover-lock"
+description = "Denies the recover_lock command without any pre-configured scope."
+commands.deny = ["recover_lock"]

@@ -1,48 +1,71 @@
 # Artificer
 
-Artificer is card layout software for designers of TCGs, LCGs, board games,
-Tarot, and general cards. Humans and AI agents should be able to author cards
-within explicit layout and print constraints. MCP integration is a core product
-requirement, not an optional automation layer.
+Artificer is desktop/local-first card layout software for TCG/LCG designers,
+with broader card workflows planned. This first source slice implements one
+portable dense-card project, actual rendered body-text checks, shared symbols,
+named art variants, revision-checked persistence, editor acceptance and undo.
+Local stdio MCP authors pending changes through that same pipeline.
 
-## Documentation-only recovery candidate
+## First-slice scope
 
-This candidate contains documentation only. **Application source, sample assets,
-dependencies, bundled skills, and executable tooling are not included.** The reviewed documentation baseline is now published. It cannot run the
-prototype.
+- Exactly one card per project and undo snapshot; multiple cards are rejected.
+- One versioned `project.artificer.json` with owned, hashed, static SVG assets.
+- Body overflow, declared minimum font size, explicit fixture widow rule, and
+  shared symbol anchor checks. No automatic rewrite or font shrinking.
+- MCP changes stay pending until accepted in the editor after a measured preview.
+- Undo restores prior card content at a new revision. Stale or replaced proposals
+  cannot reuse an earlier passing validation.
+- Filesystem operations use pinned POSIX directory handles and no-follow lookups.
+  This slice is verified on macOS; Windows support is not implemented.
+- Print profile is unset. There is no bleed, print-provider preset, raster/PDF
+  export, special-frame editor, or production-wide widow threshold.
 
-At recovery on 12 October 2026, the matching
-[GitHub repository](https://github.com/squid-quarters/artificer) was empty:
-no branches, commits, issues, or PRs. A separately preserved local prototype
-renders an eight-card demo gallery, two Svelte templates, backgrounds, a Tauri
-shell, and an Effect runtime smoke module.
+## Run locally
 
-Card persistence, an editor, CLI, MCP server, image/sheet export, layout
-validation, and print preflight are **not implemented**. The earlier README's
-export feature list described intent, not working features.
+Use a supported Node runtime (`^22.17.0 || ^24.0.0 || >=26.0.0`) and Rust 1.94.1
+(the tested toolchain). Install the normal Tauri platform prerequisites.
 
-The owner selected desktop/local-first Tauri and dense TCG/LCG cards as the first
-workflow. Browser delivery is later feasibility work. Stable dependency upgrades
-are authorized in an isolated local copy; see [upgrade direction](docs/upgrade.md).
+```sh
+npm ci
+npm run tauri -w app -- dev
+```
 
-The recovered stack uses Svelte 5, SvelteKit, Tailwind v4, Vite, Effect, Vitest,
-Playwright, Storybook, and Tauri 2. This describes existing code; it does not
-select architecture for future implementation.
+Copy `fixtures/neutral-project` to a folder you own, then open that folder in the
+editor. The sample art and icon are original geometric fixtures. The application
+uses Crimson Text from its OFL-licensed dependency; a project license has not
+been selected. No reuse license is implied.
 
-## Product and process
+To run the stdio MCP endpoint, first build the native executable:
 
-- [Recovery evidence and historical intent](docs/recovery.md)
-- [Existing architecture and unresolved print dimensions](docs/architecture.md)
-- [Product requirements and proposed constraint behavior](docs/product.md)
-- [Reconciled backlog](docs/backlog.md)
-- [Pending decisions](docs/decisions.md)
-- [Sourced design research](docs/design-research.md)
-- [Verification scope](docs/verification.md)
-- [Publication and licensing inventory](docs/publication.md)
+```sh
+npm run tauri -w app -- build --debug --no-bundle --ci
+app/src-tauri/target/debug/app --mcp --project <owned-project-folder>
+```
 
-Read [AGENTS.md](AGENTS.md) before changing the project. All integration requires
-independent adversarial review, fixes, and final checks. The approved baseline is
-[commit 370ca99](https://github.com/squid-quarters/artificer/commit/370ca99124d43c817b4ba5c691c71e92abc9c41a); subsequent changes must use scoped PRs.
-The documentation bootstrap was approved and completed; subsequent changes use
-reviewed PRs. No source or sample publication is
-implied by this documentation candidate.
+MCP uses the tested 2025-11-25 initialization/tools contract. Logs go to stderr;
+stdout is protocol messages only. There is no HTTP MCP service or credential.
+The host explicitly supplies one project root; tools cannot switch roots.
+
+## Verification and process
+
+```sh
+npm run check
+npm run lint
+npm run format:check
+npm run test:unit -w app -- --run
+cargo test --manifest-path app/src-tauri/Cargo.toml --features test-bridge
+cargo build --manifest-path app/src-tauri/Cargo.toml --features test-bridge
+npm run test:e2e -w app
+```
+
+Playwright needs its matching browser installed. E2E uses the actual Rust backend
+through a development-only bridge; production builds reject that mode. The browser
+test measures actual Chromium DOM, not a mocked text-width estimate. A native
+WebKit UI run is not automated by that test. Storybook's Kit 3 compatibility
+warnings remain tracked; build success alone does not prove all addons work.
+
+Read [AGENTS.md](AGENTS.md), [implementation and boundaries](docs/first-slice.md),
+[product constraints](docs/product.md), and [pending decisions](docs/decisions.md).
+All integration uses independently reviewed PRs with fixes and final checks.
+The old prototype, its unattributed samples, bundled skills and private recovery
+history remain preserved separately and are absent from this source ancestry.

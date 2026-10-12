@@ -1,6 +1,6 @@
 # Recovery evidence — 12 October 2026
 
-## Verified identity and preservation
+## Verified identity and preservation at initial discovery
 
 - Matching repository: [squid-quarters/artificer](https://github.com/squid-quarters/artificer).
   Its description is “Card layout software for card designers (card games).”
@@ -22,16 +22,15 @@
   snapshot. The source snapshot's 193 tracked entries include one symlink.
   This preservation copy is not included in this candidate or its ancestry.
 
-Current Paperclip discovery found no dedicated Artificer project or feature
+Initial Paperclip discovery found no dedicated Artificer project or feature
 issues and one completed administrative repository-retention cross-reference.
 It supplies repository context, not a feature backlog. No records were migrated,
-deleted, created, reassigned or changed. These results describe current
-records, not proof that no deleted or external historical backlog ever existed.
+deleted, created, reassigned or changed. These results describe records at discovery, not proof that no deleted or external historical backlog ever existed.
 
 ## Concrete implementation in the separately preserved prototype
 
 Paths below identify recovered source evidence. These files are **not included**
-in this documentation-only candidate.
+in this clean implementation tree.
 
 | Evidence path | Verified state |
 | --- | --- |
@@ -75,4 +74,5 @@ requirements, while precise policies and implementation choices remain open.
 
 Original feature backlog, real acceptance card files, production constraints,
 and a completed design brief were not recovered. See [pending decisions](decisions.md)
-and [verification scope](verification.md). No source or tracker change was made.
+and [verification scope](verification.md). No source or tracker change was made during discovery. Later approved source
+work is documented in `first-slice.md`; the original prototype remains unchanged.
