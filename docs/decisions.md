@@ -26,8 +26,9 @@ direction; those choices are not implied by the neutral fixture.
 8. **Publication/license:** documentation-only public scope is approved;
    decide its license. Clean source with original neutral fixtures is approved through reviewed PRs.
    Original prototype/sample publication and project licensing remain separate.
-9. **Design direction:** confirm application personality separately from card
-   frame aesthetics. Existing PRODUCT/DESIGN hypotheses remain provisional.
+9. **Design direction — selected:** A card workbench plus C proposal-review
+   treatment is approved and implemented within single-card scope. Card frame
+   aesthetics and broader workflow remain separate; see `workbench.md`.
 
 ## Design research inputs — not product decisions
 

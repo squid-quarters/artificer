@@ -63,7 +63,7 @@ for (const fixture of catalog.cases) {
         variantId: fixture.variantId,
       });
       expect(queued.isError).not.toBe(true);
-      await page.getByRole("button", { name: `Preview ${fixture.id}`, exact: true }).click();
+      await page.getByRole("button", { name: `Preview ${fixture.id}` }).click();
       await expect(page.getByTestId("validation-status")).toHaveText(
         `Validation ${fixture.status}`,
       );

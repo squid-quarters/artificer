@@ -37,6 +37,8 @@ The owner approved the reviewed public documentation-only bootstrap. Subsequent
 authorized changes use scoped reviewed PRs. The owner approved this clean source
 slice with original neutral fixtures.
 Do not publish the preserved prototype, its unattributed assets or its ancestry.
+The owner selected A+C: card workbench plus explicit proposal-review treatment.
+Read `docs/workbench.md`; keep initial acceptance authority and single-card scope.
 No project license has been selected.
 
 Desktop/local-first Tauri and dense TCG/LCG cards are selected. Compatible stable

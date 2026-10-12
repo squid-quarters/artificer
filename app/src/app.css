@@ -2,9 +2,20 @@
 @import "@fontsource/crimson-text/700.css";
 @import "tailwindcss";
 :root {
-  font-family: system-ui, sans-serif;
-  color: #203438;
-  background: #edf1ee;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #292d25;
+  background: #f7f8f3;
+  --ink: #292d25;
+  --ink-secondary: #62665a;
+  --panel: #fafbf7;
+  --surface: #eef0e8;
+  --canvas: #e9ece3;
+  --line: #dce0d3;
+  --accent: #38572c;
+  --accent-soft: #eaf0df;
+}
+* {
+  box-sizing: border-box;
 }
 body {
   margin: 0;
@@ -17,19 +28,83 @@ select {
 }
 button {
   cursor: pointer;
-  padding: 0.6rem 0.9rem;
-  border: 1px solid #80928f;
-  border-radius: 4px;
-  background: white;
+  padding: 9px 12px;
+  border: 1px solid #bec6b2;
+  border-radius: 5px;
+  background: var(--panel);
+  color: var(--ink);
+  font-size: 12px;
+  line-height: 1.4;
+}
+button:hover:not(:disabled) {
+  background: #e8eddf;
 }
 button:disabled {
   cursor: default;
-  opacity: 0.45;
+  color: #73796a;
+  background: #eef0e9;
+  border-color: #dce0d3;
+}
+button.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  font-weight: 550;
+}
+button.primary:hover:not(:disabled) {
+  background: #29471f;
+}
+button.primary:disabled {
+  background: #e6eade;
+  border-color: #d6ddcc;
+  color: #6b735e;
+}
+button.quiet {
+  background: transparent;
+}
+button.small {
+  padding: 6px 9px;
+  font-size: 11px;
 }
 input,
 textarea,
 select {
-  padding: 0.6rem;
-  border: 1px solid #80928f;
+  padding: 9px 10px;
+  border: 1px solid #bfc7b4;
+  border-radius: 5px;
+  color: var(--ink);
+  background: #fff;
+}
+input::placeholder,
+textarea::placeholder {
+  color: #73796a;
+}
+input:disabled,
+textarea:disabled,
+select:disabled {
+  background: #f1f3ec;
+}
+:focus-visible {
+  outline: 3px solid #486d32;
+  outline-offset: 3px;
+}
+.skip-link {
+  position: fixed;
+  z-index: 10;
+  left: 16px;
+  top: -60px;
+  padding: 12px 16px;
+  background: var(--ink);
+  color: white;
   border-radius: 4px;
+  font-size: 13px;
+}
+.skip-link:focus {
+  top: 10px;
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
 }
