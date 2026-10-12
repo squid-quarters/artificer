@@ -31,3 +31,12 @@ Print profiles must be provider-specific. The supplied
 [Game Crafter guidance](https://help.thegamecrafter.com/article/39-templates)
 requires RGB PNG/JPG, so a universal CMYK PDF promise would be inappropriate.
 Choose the first real provider, accepted formats and fixtures before print design.
+
+
+## Subsequent direct inspection
+
+[Desktop design directions](design-directions.md) records six directly inspected
+Mobbin screens and three inspected OpenDesign documentation examples. It separates
+observations from Artificer proposals, and retains runtime/identity limitations.
+See [constraint matrix](constraint-matrix.md) for checked provider examples; none
+is selected as a production profile.

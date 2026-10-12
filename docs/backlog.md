@@ -38,3 +38,13 @@ neutral fixtures. MCP proposals, actual body/symbol validation, editor acceptanc
 revision/content-hash checks and undo are covered by native and browser tests.
 Multiple-card operations, print output, special frames, asset import and broader
 MCP preview/export remain follow-up work. Recovery counts above are historical.
+
+
+## Acceptance and direction preparation
+
+Original synthetic dense-text cases and measured browser tests extend the existing
+single-card slice without changing its schema or acceptance authority. The
+[constraint matrix](constraint-matrix.md) and [desktop directions](design-directions.md)
+are consultation proposals. Print/special-frame, multi-card, production-policy
+and comprehensive redesign rows above remain open. No execution tickets or
+tracker migration are created by these documents.
