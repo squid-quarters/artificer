@@ -66,6 +66,10 @@ warnings remain tracked; build success alone does not prove all addons work.
 
 Read [AGENTS.md](AGENTS.md), [implementation and boundaries](docs/first-slice.md),
 [product constraints](docs/product.md), and [pending decisions](docs/decisions.md).
-All integration uses independently reviewed PRs with fixes and final checks.
+See [synthetic dense acceptance](docs/dense-acceptance.md),
+[proposed constraint matrix](docs/constraint-matrix.md) and
+[desktop design directions](docs/design-directions.md) for the reviewed preparation
+and choices that gate broader work. All integration uses independently reviewed
+PRs with fixes and final checks.
 The old prototype, its unattributed samples, bundled skills and private recovery
 history remain preserved separately and are absent from this source ancestry.

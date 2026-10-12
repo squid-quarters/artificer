@@ -70,3 +70,18 @@ Independent adversarial review found seven initial issues and a subsequent lock
 recovery race. Fixes were rechecked; no implementation blocker remains. The
 reviewer independently reproduced proposal replacement refusal, failed-open
 scope clearing and cross-process persistent-lock contention/release.
+
+
+## Synthetic acceptance preparation
+
+The subsequent docs/test-only preparation adds seven original text cases to the
+existing end-to-end browser test: **8/8 browser/MCP tests pass**. Paired explicit
+widow/null-rule cases demonstrate fixture-specific authority. Overflow cases
+verify unchanged disk and disabled acceptance; passing cases require editor
+acceptance, preserve symbols/null print profile, and advance revision.
+
+Clean npm installation, type/lint/format checks, 4 TypeScript tests and 11 native
+regressions pass. The static frontend build runs as part of browser acceptance.
+No runtime/schema/dependency/native permission/media changes are made by this
+preparation, so prior packaging/Storybook limitations remain. See
+[dense acceptance](dense-acceptance.md) for environment and coverage limits.

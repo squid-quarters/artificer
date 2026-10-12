@@ -1,0 +1,82 @@
+{
+  "fixtureCatalogVersion": 1,
+  "provenance": "Original synthetic rules text authored for Artificer acceptance tests; not copied from any published game. Uses the existing neutral project and its already-published owned assets. No production print or widow policy implied.",
+  "cases": [
+    {
+      "id": "short-fit",
+      "title": "Reserve Spark",
+      "body": "Gain two focus. Keep one focus.",
+      "variantId": "standard",
+      "lastLineMinWords": 2,
+      "status": "pass",
+      "requiredDiagnostics": [],
+      "purpose": "Ordinary brief rules text"
+    },
+    {
+      "id": "dense-fit",
+      "title": "Measured Exchange",
+      "body": "When this unit enters play, draw one card. You may return one card from your hand to the supply.\n\nIf you returned a card, gain two focus. At the end of your turn, keep one focus.",
+      "variantId": "standard",
+      "lastLineMinWords": 2,
+      "status": "pass",
+      "requiredDiagnostics": [],
+      "purpose": "Original multi-paragraph dense rules; fixture-only fit expectation"
+    },
+    {
+      "id": "vertical-overflow",
+      "title": "Crowded Ledger",
+      "body": "Record one focus, draw one card, and return unused focus to the supply. Record one focus, draw one card, and return unused focus to the supply. Record one focus, draw one card, and return unused focus to the supply. Record one focus, draw one card, and return unused focus to the supply. Record one focus, draw one card, and return unused focus to the supply. Record one focus, draw one card, and return unused focus to the supply. Record one focus, draw one card, and return unused focus to the supply. Record one focus, draw one card, and return unused focus to the supply. Record one focus, draw one card, and return unused focus to the supply. Record one focus, draw one card, and return unused focus to the supply. Record one focus, draw one card, and return unused focus to the supply. Record one focus, draw one card, and return unused focus to the supply. Record one focus, draw one card, and return unused focus to the supply. Record one focus, draw one card, and return unused focus to the supply. Record one focus, draw one card, and return unused focus to the supply. Record one focus, draw one card, and return unused focus to the supply. Record one focus, draw one card, and return unused focus to the supply. Record one focus, draw one card, and return unused focus to the supply. Record one focus, draw one card, and return unused focus to the supply. Record one focus, draw one card, and return unused focus to the supply. Record one focus, draw one card, and return unused focus to the supply. Record one focus, draw one card, and return unused focus to the supply. Record one focus, draw one card, and return unused focus to the supply. Record one focus, draw one card, and return unused focus to the supply. Record one focus, draw one card, and return unused focus to the supply. Record one focus, draw one card, and return unused focus to the supply. Record one focus, draw one card, and return unused focus to the supply. Record one focus, draw one card, and return unused focus to the supply. Record one focus, draw one card, and return unused focus to the supply. Record one focus, draw one card, and return unused focus to the supply. Record one focus, draw one card, and return unused focus to the supply. Record one focus, draw one card, and return unused focus to the supply. Record one focus, draw one card, and return unused focus to the supply. Record one focus, draw one card, and return unused focus to the supply. Record one focus, draw one card, and return unused focus to the supply. ",
+      "variantId": "standard",
+      "lastLineMinWords": 2,
+      "status": "fail",
+      "requiredDiagnostics": [
+        "overflow"
+      ],
+      "purpose": "Too much body text; never silently rewrite"
+    },
+    {
+      "id": "explicit-widow",
+      "title": "Last Word",
+      "body": "Draw one card.\nFocus.",
+      "variantId": "standard",
+      "lastLineMinWords": 2,
+      "status": "fail",
+      "requiredDiagnostics": [
+        "widow"
+      ],
+      "purpose": "Declared two-word final-line rule; no overflow"
+    },
+    {
+      "id": "widow-disabled",
+      "title": "Single Word Allowed",
+      "body": "Draw one card.\nFocus.",
+      "variantId": "standard",
+      "lastLineMinWords": null,
+      "status": "pass",
+      "requiredDiagnostics": [],
+      "purpose": "Same body, explicit null rule; no universal widow default"
+    },
+    {
+      "id": "alternate-art",
+      "title": "Reserve Spark",
+      "body": "Gain two focus. Keep one focus.",
+      "variantId": "alternate",
+      "lastLineMinWords": 2,
+      "status": "pass",
+      "requiredDiagnostics": [],
+      "purpose": "Named existing art variant; gameplay and shared anchor retained"
+    },
+    {
+      "id": "unbroken-token",
+      "title": "Long Identifier",
+      "body": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\nKeep focus.",
+      "variantId": "standard",
+      "lastLineMinWords": 2,
+      "status": "fail",
+      "requiredDiagnostics": [
+        "overflow"
+      ],
+      "purpose": "Unbroken token wrapping is measured against actual bounds"
+    }
+  ]
+}
