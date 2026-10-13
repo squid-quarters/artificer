@@ -69,6 +69,12 @@ Crimson Text, not mocked text-width estimates. Select one engine with
 engines do not constitute native Tauri WKWebView UI parity. Storybook's Kit 3 compatibility
 warnings remain tracked; build success alone does not prove all addons work.
 
+Native interaction tests follow the [native test process](docs/native-testing.md):
+coordinate foreground ownership, verify the actual target before each input
+batch, use scoped delivery, and stop when delivery or results are inconclusive.
+An unavailable native controller leaves that check unverified; global HID input
+is not a fallback.
+
 Read [AGENTS.md](AGENTS.md), [implementation and boundaries](docs/first-slice.md),
 [product constraints](docs/product.md), and [pending decisions](docs/decisions.md).
 See [synthetic dense acceptance](docs/dense-acceptance.md),

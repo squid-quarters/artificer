@@ -31,6 +31,24 @@ source instructions and evidence before applying recovered conventions. Keep app
 output design. Mobbin and Open Design research are inputs, not approved patterns
 or dependencies.
 
+## Native interaction tests
+
+Read [native test process](docs/native-testing.md) before any native UI input.
+Obtain a coordinated foreground slot and use disposable synthetic projects.
+User activity takes priority over an earlier test slot. Check the unlocked
+session, exact live process/window and actual foreground before every input
+batch. An intended window, DOM focus or successful activation request is not
+proof of the event recipient.
+
+Use an input route explicitly scoped to the verified process/window. Do not
+fall back to global HID posting or other unscoped input when delivery is
+unverified. Stop on unknown target/focus, changed ownership or inconclusive
+delivery; preserve evidence and report the precise missing prerequisite.
+Do not broaden the route, repeat stalled probes, change permissions, or inject
+cleanup keys into another app. Record event times/routes and balanced key pairs,
+then verify observable UI and disk outcomes. Emitted keys alone are not a pass.
+Close the controlled test app safely and explicitly release the slot.
+
 ## Delivery and review
 
 The owner approved the reviewed public documentation-only bootstrap. Subsequent
@@ -55,6 +73,11 @@ resolve missing product decisions or authorize deployment.
 For documentation changes, check relative links, Markdown formatting, full-tree
 publication scope, and Git ancestry. Do not add tests that merely mirror prose.
 Use the source commands in `README.md`; old recovery checks in
-`docs/verification.md` describe the preserved prototype. Run native regressions,
+`docs/verification.md` describe the preserved prototype. For executable changes,
+run native regressions,
 actual browser/MCP acceptance, publication-tree/ancestry checks and independent
 adversarial review. Do not accept mock width estimates as text-fit evidence.
+Documentation-only process changes require independent review, link/format and
+publication/ancestry checks; they do not authorize native input or require a
+repeat of completed source suites. Preserve incident evidence outside the public
+tree and keep verified, failed and unverified outcomes distinct.

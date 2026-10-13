@@ -82,5 +82,8 @@ Screenshots can be collected with `ARTIFICER_EVIDENCE_DIR`; test fixture folders
 contain no personal card content. Screenshot files stay outside the published
 source tree. Automated checks cover Chromium and Playwright WebKit; the existing screenshots
 are Chromium evidence. Neither is screen-reader certification or full native
-Tauri WKWebView parity. The native build
-is checked without launching or taking the foreground from other projects.
+Tauri WKWebView parity. A native build check does not launch the app or establish
+interaction results. Separate native interaction work follows the
+[native test process](native-testing.md), with coordinated foreground ownership
+and verified scoped input. A passing edit/acceptance check does not certify
+native Tab traversal or arrow scrolling; record each observed outcome separately.
