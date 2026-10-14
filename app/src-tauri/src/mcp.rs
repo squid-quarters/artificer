@@ -8,7 +8,7 @@ fn tools() -> Value {
     json!({"tools":[
         tool("get_project","Read the scoped project",json!({}),&[]),
         tool("get_constraints","Discover template, variant and fixture rules",json!({}),&[]),
-        tool("propose_change","Queue a change. Only the editor may accept it",json!({"id":{"type":"string"},"expectedRevision":{"type":"integer"},"cardId":{"type":"string"},"body":{"type":"string"},"variantId":{"type":"string"}}),&["id","expectedRevision","cardId"]),
+        tool("propose_change","Queue a change. Only the editor may accept it",json!({"id":{"type":"string"},"expectedRevision":{"type":"integer"},"cardId":{"type":"string"},"body":{"type":"string"},"title":{"type":"string"},"variantId":{"type":"string"}}),&["id","expectedRevision","cardId"]),
         tool("get_proposal","Read proposal and actual editor validation, including not-run",json!({"id":{"type":"string"}}),&["id"]),
         tool("commit_proposal","Request acceptance; initial agent edits always require editor acceptance",json!({"id":{"type":"string"}}),&["id"]),
         tool("propose_undo","Queue undo for the same measured editor acceptance pipeline",json!({"id":{"type":"string"},"expectedRevision":{"type":"integer"}}),&["id","expectedRevision"])
@@ -17,7 +17,14 @@ fn tools() -> Value {
 fn call(session: &mut Session, name: &str, args: &Value) -> Result<Value, String> {
     let allowed: &[&str] = match name {
         "get_project" | "get_constraints" => &[],
-        "propose_change" => &["id", "expectedRevision", "cardId", "body", "variantId"],
+        "propose_change" => &[
+            "id",
+            "expectedRevision",
+            "cardId",
+            "body",
+            "variantId",
+            "title",
+        ],
         "get_proposal" | "commit_proposal" => &["id"],
         "propose_undo" => &["id", "expectedRevision"],
         _ => return Err("Unknown MCP tool".into()),
@@ -60,13 +67,18 @@ fn call(session: &mut Session, name: &str, args: &Value) -> Result<Value, String
                         .to_string(),
                 )
             };
-            serde_json::to_value(session.propose(
+            serde_json::to_value(session.propose_with_title(
                 id()?,
                 rev()?,
                 args["cardId"].as_str().ok_or("Missing card ID")?,
                 body,
                 variant,
                 "edit",
+                if args["title"].is_null() {
+                    None
+                } else {
+                    Some(args["title"].as_str().ok_or("Invalid title")?.to_string())
+                },
             )?)
             .map_err(|e| e.to_string())
         }

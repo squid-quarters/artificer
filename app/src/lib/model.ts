@@ -4,6 +4,9 @@ export type Template = {
   width: number;
   height: number;
   body: Region;
+  titleRegion?: Region;
+  titleFontPx?: number;
+  titleLineHeightPx?: number;
   fontPx: number;
   minFontPx: number;
   lastLineMinWords: number | null;
@@ -40,6 +43,7 @@ export type Proposal = {
   kind: "edit" | "undo";
   status: "pending" | "accepted";
   acceptedRevision: number | null;
+  title?: string | null;
 };
 export type Diagnostic = { code: string; regionId: string; message: string };
 export type Validation = {
@@ -65,6 +69,10 @@ export function candidate(project: Project, proposal: Proposal): Project {
   if (!card) throw new Error("Unknown card");
   const template = next.templates.find((t) => t.id === card.templateId);
   if (!template) throw new Error("Unknown template");
+  if (proposal.title != null) {
+    if (!template.titleRegion) throw new Error("Title editing requires a declared template region");
+    card.title = proposal.title;
+  }
   if (proposal.body !== null) card.body = proposal.body;
   if (proposal.variantId !== null) {
     if (!template.permittedOverrides.includes("variantId"))

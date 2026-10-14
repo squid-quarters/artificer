@@ -38,6 +38,82 @@ export async function measure(body: HTMLElement, template: Template): Promise<Va
       });
   }
 
+  if (template.titleRegion) {
+    const title = article?.querySelector<HTMLElement>('[data-testid="card-title"]');
+    if (!title)
+      diagnostics.push({
+        code: "title-region",
+        regionId: "title",
+        message: "Declared title region is not rendered.",
+      });
+    else {
+      const box = title.getBoundingClientRect();
+      const region = template.titleRegion;
+      const style = getComputedStyle(title);
+      if (
+        ["left", "top", "width", "height"].some(
+          (key, index) =>
+            Math.abs(
+              Number.parseFloat(style.getPropertyValue(key)) -
+                [region.x, region.y, region.width, region.height][index],
+            ) > 0.5,
+        ) ||
+        Number.parseFloat(style.fontSize) !== template.titleFontPx ||
+        Number.parseFloat(style.lineHeight) !== template.titleLineHeightPx
+      )
+        diagnostics.push({
+          code: "title-region",
+          regionId: "title",
+          message: "Rendered title differs from its declared bounds or font.",
+        });
+      const range = document.createRange();
+      range.selectNodeContents(title);
+      const rects = Array.from(range.getClientRects()).filter(
+        (rect) => rect.width > 0 && rect.height > 0,
+      );
+      if (
+        title.scrollWidth > title.clientWidth ||
+        title.scrollHeight > title.clientHeight ||
+        rects.some(
+          (rect) =>
+            rect.left < box.left - 0.5 ||
+            rect.right > box.right + 0.5 ||
+            rect.top < box.top - 0.5 ||
+            rect.bottom > box.bottom + 0.5,
+        )
+      )
+        diagnostics.push({
+          code: "title-overflow",
+          regionId: "title",
+          message:
+            "Title extends outside its declared region. Edit the title; text and font size are unchanged.",
+        });
+      const reserved = [
+        body,
+        symbol,
+        ...Array.from(article?.querySelectorAll<HTMLElement>("img, footer") ?? []),
+      ]
+        .filter((el): el is HTMLElement => !!el)
+        .map((el) => el.getBoundingClientRect());
+      if (
+        rects.some((rect) =>
+          reserved.some(
+            (other) =>
+              rect.left < other.right &&
+              rect.right > other.left &&
+              rect.top < other.bottom &&
+              rect.bottom > other.top,
+          ),
+        )
+      )
+        diagnostics.push({
+          code: "title-boundary",
+          regionId: "title",
+          message: "Title overlaps a reserved body, symbol, art or footer region.",
+        });
+    }
+  }
+
   const fontSize = Number.parseFloat(getComputedStyle(body).fontSize);
   if (fontSize < template.minFontPx)
     diagnostics.push({

@@ -5,18 +5,24 @@ import { tmpdir } from "node:os";
 import { resolve, join } from "node:path";
 import { rpc } from "./helpers/rpc.ts";
 
-async function harness(page: Page, historyBody?: string) {
+async function harness(page: Page, historyBody?: string, legacyTemplate = false) {
   const root = await mkdtemp(join(tmpdir(), "artificer-workbench-"));
   await cp(resolve("../fixtures/neutral-project"), root, { recursive: true });
-  if (historyBody !== undefined) {
+  if (historyBody !== undefined || legacyTemplate) {
     const path = join(root, "project.artificer.json");
     const project = JSON.parse(await readFile(path, "utf8"));
-    project.history = [
-      {
-        cards: [{ ...project.cards[0], body: historyBody }],
-        commandId: "synthetic-history",
-      },
-    ];
+    if (legacyTemplate) {
+      delete project.templates[0].titleRegion;
+      delete project.templates[0].titleFontPx;
+      delete project.templates[0].titleLineHeightPx;
+    }
+    if (historyBody !== undefined)
+      project.history = [
+        {
+          cards: [{ ...project.cards[0], body: historyBody }],
+          commandId: "synthetic-history",
+        },
+      ];
     // Prepare offline, before either editor or agent opens this disposable fixture.
     await writeFile(path, JSON.stringify(project));
   }
@@ -101,6 +107,210 @@ async function evidence(page: Page, name: string) {
     fullPage: true,
   });
 }
+
+test("title authoring shares measured UI/MCP review, stale refusal and undo", async ({ page }) => {
+  await page.setViewportSize({ width: 1280, height: 1000 });
+  const app = await harness(page);
+  try {
+    await open(page, app.root);
+    const original = await app.saved();
+    const title = page.getByLabel("Card title", { exact: true });
+    await title.fill("A deliberately oversized card title ".repeat(30));
+    await page.getByRole("button", { name: "Preview editor change", exact: true }).click();
+    await expect(page.getByTestId("validation-status")).toHaveAttribute("data-status", "fail");
+    await expect(page.getByRole("main")).toContainText("Title extends outside its declared region");
+    await expect(page.getByRole("button", { name: "Accept preview", exact: true })).toBeDisabled();
+    const failedId = await page.getByTestId("review-proposal-id").innerText();
+    const failed = await app.tool("get_proposal", { id: failedId });
+    expect(failed.structuredContent.validation.diagnostics).toContainEqual(
+      expect.objectContaining({ code: "title-overflow", regionId: "title" }),
+    );
+    expect(await app.saved()).toEqual(original);
+    expect(failed.structuredContent.validation.diagnostics).toContainEqual(
+      expect.objectContaining({ code: "title-boundary", regionId: "title" }),
+    );
+    expect((await app.tool("get_constraints")).structuredContent.templates[0].titleRegion).toEqual(
+      original.templates[0].titleRegion,
+    );
+    const longTitle = page.getByRole("region", { name: "After title", exact: true });
+    await longTitle.focus();
+    await expect(longTitle).toBeFocused();
+    await page.keyboard.press("ArrowDown");
+    await expect.poll(() => longTitle.evaluate((el) => el.scrollTop)).toBeGreaterThan(0);
+    const canvasBox = await page.getByRole("region", { name: "Card preview canvas" }).boundingBox();
+    expect(canvasBox!.height).toBeGreaterThan(400);
+    expect((await page.locator(".canvas-toolbar").boundingBox())!.height).toBeLessThan(120);
+    await expect(page.getByTestId("validation-status")).toBeInViewport();
+    await evidence(page, "title-overflow");
+    expect(
+      (
+        await app.tool("propose_change", {
+          id: "agent-title-overflow",
+          expectedRevision: 1,
+          cardId: "fixture-card",
+          title: "X".repeat(100),
+        })
+      ).isError,
+    ).toBe(false);
+    await page.getByRole("button", { name: /Preview agent-title-overflow/ }).click();
+    await expect(page.getByTestId("validation-status")).toHaveAttribute("data-status", "fail");
+    await expect(page.getByRole("button", { name: "Accept preview", exact: true })).toBeDisabled();
+    expect(await app.saved()).toEqual(original);
+
+    await page
+      .getByRole("complementary", { name: "Card inspector" })
+      .getByRole("button", { name: "Return to current card", exact: true })
+      .click();
+    await title.fill("Measured Focus");
+    await page.getByRole("button", { name: "Preview editor change", exact: true }).click();
+    await expect(page.getByTestId("validation-status")).toHaveAttribute("data-status", "pass");
+    await expect(page.getByTestId("before-title")).toHaveText(original.cards[0].title);
+    await expect(page.getByTestId("after-title")).toHaveText("Measured Focus");
+    await page.getByRole("button", { name: "Compare cards", exact: true }).click();
+    expect(
+      await page
+        .getByTestId("active-proof")
+        .getByTestId("card-title")
+        .evaluate((el) => getComputedStyle(el).fontSize),
+    ).toBe("25px");
+    await audit(page);
+    await evidence(page, "title-comparison");
+    await page.getByRole("button", { name: "Accept preview", exact: true }).click();
+    await expect(page.getByTestId("revision")).toHaveText("Revision 2");
+    expect((await app.saved()).cards[0]).toEqual({ ...original.cards[0], title: "Measured Focus" });
+    await page.getByRole("button", { name: "Preview undo", exact: true }).click();
+    await expect(page.getByTestId("after-title")).toHaveText(original.cards[0].title);
+    await page.getByRole("button", { name: "Accept preview", exact: true }).click();
+    await expect(page.getByTestId("revision")).toHaveText("Revision 3");
+    expect((await app.saved()).cards).toEqual(original.cards);
+    const other = await page.context().newPage();
+    await app.attach(other);
+    await other.getByLabel("Project folder", { exact: true }).fill(app.root);
+    await other.getByRole("button", { name: "Open project", exact: true }).click();
+    await expect(other.getByTestId("revision")).toHaveText("Revision 3");
+    await expect(other.getByLabel("Card title", { exact: true })).toHaveValue(
+      original.cards[0].title,
+    );
+    await other.close();
+    expect(
+      (
+        await app.tool("propose_change", {
+          id: "agent-title-stale",
+          expectedRevision: 3,
+          cardId: "fixture-card",
+          title: "Agent Focus",
+        })
+      ).isError,
+    ).toBe(false);
+    await page.getByRole("button", { name: /Preview agent-title-stale/ }).click();
+    await expect(page.getByTestId("validation-status")).toHaveAttribute("data-status", "pass");
+    const pendingPath = join(app.root, ".artificer/requests/agent-title-stale.json");
+    const pending = JSON.parse(await readFile(pendingPath, "utf8"));
+    pending.title = "Replacement Focus";
+    await writeFile(pendingPath, JSON.stringify(pending));
+    await expect(page.getByTestId("validation-status")).toHaveAttribute("data-status", "stale");
+    await expect(page.getByRole("button", { name: "Accept preview", exact: true })).toBeDisabled();
+    expect(
+      (await app.tool("get_proposal", { id: "agent-title-stale" })).structuredContent.validation
+        .status,
+    ).toBe("not-run");
+    expect((await app.saved()).revision).toBe(3);
+    await page
+      .getByRole("complementary", { name: "Card inspector" })
+      .getByRole("button", { name: "Return to current card", exact: true })
+      .click();
+    await title.fill("Human Focus");
+    expect(
+      (
+        await app.tool("propose_change", {
+          id: "agent-title",
+          expectedRevision: 3,
+          cardId: "fixture-card",
+          title: "Agent Focus",
+        })
+      ).isError,
+    ).toBe(false);
+    await page.getByRole("button", { name: /Preview agent-title Card change/ }).click();
+    await expect(page.getByTestId("validation-status")).toHaveAttribute("data-status", "pass");
+    expect(
+      (await app.tool("commit_proposal", { id: "agent-title" })).structuredContent.committed,
+    ).toBe(false);
+    await page.getByRole("button", { name: "Accept preview", exact: true }).click();
+    await expect(page.getByTestId("revision")).toHaveText("Revision 4");
+    await expect(title).toHaveValue("Human Focus");
+    const saved = await app.saved();
+    expect(saved.cards[0]).toEqual({ ...original.cards[0], title: "Agent Focus" });
+    expect(saved.templates).toEqual(original.templates);
+    expect(saved.symbols).toEqual(original.symbols);
+    expect(saved.printProfile).toBeNull();
+    await page.getByRole("button", { name: "Preview editor change", exact: true }).click();
+    await expect(page.getByTestId("after-title")).toHaveText("Human Focus");
+    await expect(page.getByTestId("validation-status")).toHaveAttribute("data-status", "pass");
+  } finally {
+    await app.cleanup();
+  }
+});
+
+test("empty titles remain empty with accessible workbench labels", async ({ page }) => {
+  const app = await harness(page);
+  try {
+    await open(page, app.root);
+    await page.getByLabel("Card title", { exact: true }).fill("");
+    await page.getByRole("button", { name: "Preview editor change", exact: true }).click();
+    await expect(page.getByTestId("validation-status")).toHaveAttribute("data-status", "pass");
+    await expect(page.getByTestId("active-proof").getByTestId("card-title")).toHaveText("");
+    await audit(page);
+    await page.getByRole("button", { name: "Accept preview", exact: true }).click();
+    await expect(page.getByTestId("revision")).toHaveText("Revision 2");
+    expect((await app.saved()).cards[0].title).toBe("");
+    await expect(page.locator(".canvas-toolbar h2")).toHaveText("Untitled card");
+    await audit(page);
+  } finally {
+    await app.cleanup();
+  }
+});
+
+test("legacy templates retain body workflows without implicit title migration", async ({
+  page,
+}) => {
+  const app = await harness(page, undefined, true);
+  try {
+    await open(page, app.root);
+    await expect(page.getByLabel("Card title", { exact: true })).not.toBeEditable();
+    const original = await app.saved();
+    expect(
+      (
+        await app.tool("propose_change", {
+          id: "forbidden-title",
+          expectedRevision: 1,
+          cardId: "fixture-card",
+          title: "New title",
+        })
+      ).isError,
+    ).toBe(true);
+    const result = await app.tool("propose_change", {
+      id: "legacy-body",
+      expectedRevision: 1,
+      cardId: "fixture-card",
+      body: "Gain two focus.",
+    });
+    expect(result.isError).toBe(false);
+    expect(result.structuredContent).not.toHaveProperty("title");
+    await page.getByRole("button", { name: /Preview legacy-body/ }).click();
+    await expect(page.getByTestId("validation-status")).toHaveAttribute("data-status", "pass");
+    await page.getByRole("button", { name: "Accept preview", exact: true }).click();
+    await expect(page.getByTestId("revision")).toHaveText("Revision 2");
+    const saved = await app.saved();
+    expect(saved.templates).toEqual(original.templates);
+    expect(saved.cards[0].title).toBe(original.cards[0].title);
+    expect(
+      (await app.tool("get_proposal", { id: "legacy-body" })).structuredContent.proposal
+        .acceptedRevision,
+    ).toBe(2);
+  } finally {
+    await app.cleanup();
+  }
+});
 
 for (const [name, body] of [
   ["whitespace", " ".repeat(20_001)],

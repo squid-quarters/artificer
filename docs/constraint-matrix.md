@@ -12,7 +12,8 @@ Synthetic tests are documented in [dense acceptance](dense-acceptance.md).
 | Widows | Explicit final-line word count or null; fixture failure rejects | Show final line and selected rule; exemptions must be named | Language, paragraph versus region scope, punctuation and rule severity |
 | Shared symbols | One registry/anchor checked in both existing art variants | Cross-type alignment fixtures; fail unintended drift | Which anchors are invariants; how intentional exceptions are approved |
 | Alternate art | Named art variant only; same gameplay/template/symbols | Surface changed visual fields and inherited values before acceptance | Which geometry changes may be intentionally excepted |
-| Title/footer | Rendered but not measured | Add region diagnostics before claiming complete-card fit | Region boundaries, line limits and exception authority |
+| Title | Owner-approved editing and actual DOM measurement within an explicitly declared region; overflow/overlap blocks acceptance | Preserve text and fixed declared typography; title-specific diagnostics and before/after review | Real-template geometry remains a designer choice; legacy templates need explicit bounds |
+| Footer | Fixed fixture label, not measured or editable | Add region diagnostics before claiming complete-card fit | Region boundaries, fields and exception authority |
 | Special frames | Not implemented | Explicit frame-specific regions and acceptance examples | First frame family and allowed inheritance/overrides |
 | Stale proposal | Revision, content hash and exact preview identity checked | Keep rejection with a request to preview against the new revision | Batch/rebase semantics only if later authorized |
 | Trim and bleed | Print profile null | Separate physical trim box, outside bleed and inside safe area; reject export if required profile absent | Provider/product/template revision, units and rounding |

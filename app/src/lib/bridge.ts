@@ -15,5 +15,6 @@ export const bridge = {
     body: string | null,
     variantId: string | null,
     kind: "edit" | "undo" = "edit",
-  ) => invoke<Proposal>("editor_proposal", { revision, cardId, body, variantId, kind }),
+    title: string | null = null,
+  ) => invoke<Proposal>("editor_proposal", { revision, cardId, body, variantId, kind, title }),
 };

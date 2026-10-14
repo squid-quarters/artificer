@@ -9,7 +9,7 @@ rules, add a license or tracker, install OpenDesign, or introduce multi-card dat
 
 Project/card context and the pending proposal queue sit on the left. The central
 canvas renders the existing dense card at its actual logical size. The inspector
-on the right edits rules text and an explicitly permitted named art variant,
+on the right edits titles, rules text and an explicitly permitted named art variant,
 then shows measured before/after review. Template geometry, font minimum, final
 line rule and shared symbol anchor are inherited read-only values. Recent
 accepted receipts supply the sidebar history.
@@ -32,7 +32,7 @@ No zoom or CSS transform changes the candidate's measurement coordinates.
 
 Preview captures one current project snapshot, builds the candidate through the
 existing shared function, loads both owned art variants and measures the proposed
-DOM. The before/after rules and variant comparison describes exactly that
+DOM. The before/after title, rules and variant comparison describes exactly that
 candidate. Long text panels have named, focusable scroll regions for keyboard
 inspection. Passing validation appears only after the Rust record command returns.
 
@@ -49,7 +49,7 @@ Operation versions prevent older asynchronous poll results from restoring an
 obsolete selection or scope. Native revision/hash/snapshot checks remain the
 final authority.
 
-An unsubmitted human rules/art draft survives another editor's save and acceptance
+An unsubmitted human title/rules/art draft survives another editor's save and acceptance
 of an independent agent/undo proposal. A pristine draft or one matching the
 accepted candidate updates to saved content; an unrelated dirty draft is retained
 with an announcement and requires its own new preview. Drafts are in-memory only;
@@ -59,7 +59,7 @@ old scope, card and acceptance controls.
 
 The queue labels proposals by their actual IDs and kind. They do not infer agent
 identity or provenance from an ID prefix. Print readiness remains unavailable:
-layout checks cover body/shared symbols, not title/footer or whole-card print.
+layout checks cover declared titles, body and shared symbols, not footer or whole-card print. Legacy templates identify missing title bounds and disable title editing.
 
 ## Verification boundaries
 
@@ -87,3 +87,11 @@ interaction results. Separate native interaction work follows the
 [native test process](native-testing.md), with coordinated foreground ownership
 and verified scoped input. A passing edit/acceptance check does not certify
 native Tab traversal or arrow scrolling; record each observed outcome separately.
+
+
+The approved title extension displays the inherited title box/font and separate
+before/after title text. Title overflow or overlap blocks acceptance with a
+`title` region diagnostic; font size and text stay intact. UI/MCP title changes,
+undo/reopen, title-only stale replacement, dirty title retention and legacy body
+workflows are covered by real-backend Chromium/WebKit tests. See
+[title contract and compatibility](first-slice.md#approved-title-authoring-extension).

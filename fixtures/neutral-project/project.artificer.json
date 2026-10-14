@@ -48,7 +48,15 @@
       ],
       "permittedOverrides": [
         "variantId"
-      ]
+      ],
+      "titleRegion": {
+        "x": 24,
+        "y": 22,
+        "width": 247,
+        "height": 40
+      },
+      "titleFontPx": 25,
+      "titleLineHeightPx": 35
     }
   ],
   "cards": [

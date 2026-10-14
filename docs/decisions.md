@@ -37,3 +37,10 @@ supplied by the parallel researcher. Open Design's exact project identity remain
 an assumption pending confirmation. Use research after the first fixture,
 constraint policy and publication scope are confirmed. The recovered Impeccable references are historical context; its bundled skill
 is excluded. The neutral fixture does not settle the comprehensive design brief.
+
+
+10. **Title slice — approved:** editable titles on the neutral template through
+    the existing human/MCP proposal, measured review, acceptance and undo path.
+    Overflow rejects acceptance; no automatic shrinking or rewriting. Bounds and
+    typography are explicit fixture fields. Legacy compatibility is retained;
+    footer/body policy, print, assets and multiple-card scope remain unchanged.
