@@ -5,9 +5,21 @@ import { tmpdir } from "node:os";
 import { resolve, join } from "node:path";
 import { rpc } from "./helpers/rpc.ts";
 
-async function harness(page: Page) {
+async function harness(page: Page, historyBody?: string) {
   const root = await mkdtemp(join(tmpdir(), "artificer-workbench-"));
   await cp(resolve("../fixtures/neutral-project"), root, { recursive: true });
+  if (historyBody !== undefined) {
+    const path = join(root, "project.artificer.json");
+    const project = JSON.parse(await readFile(path, "utf8"));
+    project.history = [
+      {
+        cards: [{ ...project.cards[0], body: historyBody }],
+        commandId: "synthetic-history",
+      },
+    ];
+    // Prepare offline, before either editor or agent opens this disposable fixture.
+    await writeFile(path, JSON.stringify(project));
+  }
   const binary = resolve("src-tauri/target/debug/app");
   const children: ChildProcessWithoutNullStreams[] = [];
   const start = (mode: string) => {
@@ -89,6 +101,82 @@ async function evidence(page: Page, name: string) {
     fullPage: true,
   });
 }
+
+for (const [name, body] of [
+  ["whitespace", " ".repeat(20_001)],
+  ["UTF-8", "é".repeat(10_001)],
+]) {
+  test(`oversized ${name} undo history is rejected without saving`, async ({ page }) => {
+    const app = await harness(page);
+    const invalidRoot = await mkdtemp(join(tmpdir(), "artificer-invalid-history-"));
+    try {
+      await open(page, app.root);
+      const current = await app.saved();
+      await cp(resolve("../fixtures/neutral-project"), invalidRoot, { recursive: true });
+      const path = join(invalidRoot, "project.artificer.json");
+      const project = JSON.parse(await readFile(path, "utf8"));
+      project.history = [{ cards: [{ ...project.cards[0], body }], commandId: "invalid-history" }];
+      const original = JSON.stringify(project);
+      await writeFile(path, original);
+      const child = spawn(resolve("src-tauri/target/debug/app"), [
+        "--mcp",
+        "--project",
+        invalidRoot,
+      ]);
+      let stdout = "",
+        stderr = "";
+      child.stdout.on("data", (data) => (stdout += data));
+      child.stderr.on("data", (data) => (stderr += data));
+      const code = await new Promise<number | null>((done, reject) => {
+        child.once("error", reject);
+        child.once("close", done);
+      });
+      expect(code).toBe(1);
+      expect(stdout).toBe("");
+      expect(stderr.trim()).toBe("Invalid single-card undo history");
+      await page.getByRole("button", { name: "Change project", exact: true }).click();
+      await page.getByLabel("Project folder", { exact: true }).fill(invalidRoot);
+      await page.getByRole("button", { name: "Open project", exact: true }).click();
+      await expect(page.getByRole("alert")).toContainText("Invalid single-card undo history");
+      await expect(page.getByTestId("revision")).toHaveCount(0);
+      await expect(page.getByRole("button", { name: "Accept preview", exact: true })).toHaveCount(
+        0,
+      );
+      expect(await readFile(path, "utf8")).toBe(original);
+      expect(await app.saved()).toEqual(current);
+    } finally {
+      await app.cleanup();
+      await rm(invalidRoot, { recursive: true, force: true });
+    }
+  });
+}
+
+test("undo of a body at the byte limit remains renderable and reopenable", async ({ page }) => {
+  const body = " ".repeat(20_000);
+  const app = await harness(page, body);
+  try {
+    await open(page, app.root);
+    const result = await app.tool("propose_undo", { id: "boundary-undo", expectedRevision: 1 });
+    expect(result.isError).toBe(false);
+    await page.getByRole("button", { name: /Preview boundary-undo/ }).click();
+    await expect(page.getByTestId("validation-status")).toHaveAttribute("data-status", "pass");
+    const report = await app.tool("get_proposal", { id: "boundary-undo" });
+    expect(report.structuredContent.validation.lineCount).toBe(0);
+    await page.getByRole("button", { name: "Accept preview", exact: true }).click();
+    await expect(page.getByTestId("revision")).toHaveText("Revision 2");
+    expect((await app.saved()).cards[0].body).toBe(body);
+    // Start fresh Rust sessions: in-memory acceptance alone cannot prove reopenability.
+    const other = await page.context().newPage();
+    await app.attach(other);
+    await other.getByLabel("Project folder", { exact: true }).fill(app.root);
+    await other.getByRole("button", { name: "Open project", exact: true }).click();
+    await expect(other.getByTestId("revision")).toHaveText("Revision 2");
+    expect((await app.saved()).cards[0].body).toBe(body);
+    await other.close();
+  } finally {
+    await app.cleanup();
+  }
+});
 
 test("keyboard regions preserve boundaries, editing and acceptance focus", async ({ page }) => {
   await page.setViewportSize({ width: 1120, height: 1000 });

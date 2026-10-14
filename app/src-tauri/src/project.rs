@@ -12,6 +12,7 @@ use std::{
     path::{Path, PathBuf},
 };
 type Result<T> = std::result::Result<T, String>;
+const MAX_BODY_BYTES: usize = 20_000;
 static NONCE: AtomicU64 = AtomicU64::new(0);
 pub(crate) fn nonce() -> String {
     format!(
@@ -144,7 +145,9 @@ impl Session {
         for h in p["history"].as_array().unwrap() {
             if h["cards"][0]["id"] != card["id"]
                 || h["cards"][0]["templateId"] != card["templateId"]
-                || !h["cards"][0]["body"].is_string()
+                || h["cards"][0]["body"]
+                    .as_str()
+                    .is_none_or(|s| s.len() > MAX_BODY_BYTES)
             {
                 return Err("Invalid single-card undo history".into());
             }
@@ -206,7 +209,9 @@ impl Session {
         }
         for card in p["cards"].as_array().unwrap() {
             if !card["id"].as_str().is_some_and(id_ok)
-                || card["body"].as_str().is_none_or(|s| s.len() > 20_000)
+                || card["body"]
+                    .as_str()
+                    .is_none_or(|s| s.len() > MAX_BODY_BYTES)
             {
                 return Err("Invalid card".into());
             }
@@ -332,7 +337,7 @@ impl Session {
         if kind != "edit" && kind != "undo" {
             return Err("Unsupported change kind".into());
         }
-        if body.as_ref().is_some_and(|s| s.len() > 20_000) {
+        if body.as_ref().is_some_and(|s| s.len() > MAX_BODY_BYTES) {
             return Err("Rules text size limit".into());
         }
         let request = Proposal {
@@ -609,6 +614,51 @@ mod tests {
     }
     fn pass() -> Value {
         json!({"status":"pass","diagnostics":[],"environment":"unit test seam"})
+    }
+    #[test]
+    fn undo_history_obeys_current_body_byte_limit() {
+        for (body, allowed) in [
+            (json!(" ".repeat(MAX_BODY_BYTES)), true),
+            (json!(" ".repeat(MAX_BODY_BYTES + 1)), false),
+            (json!("é".repeat(MAX_BODY_BYTES / 2)), true),
+            (json!("é".repeat(MAX_BODY_BYTES / 2 + 1)), false),
+            (Value::Null, false),
+        ] {
+            let fixture = Fixture::new();
+            let path = fixture.0.join("project.artificer.json");
+            let mut p: Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+            let mut previous = p["cards"][0].clone();
+            previous["body"] = body.clone();
+            // Check every history entry, not just the next undo target.
+            p["history"] = json!([
+                {"cards":[previous],"commandId":"older"},
+                {"cards":p["cards"],"commandId":"newer"}
+            ]);
+            let before = serde_json::to_vec(&p).unwrap();
+            fs::write(&path, &before).unwrap();
+            let mut session = Session::default();
+            let opened = session.open(fixture.0.to_str().unwrap());
+            if allowed {
+                opened.unwrap();
+                for (id, revision) in [("undo-newer", 1), ("undo-older", 2)] {
+                    session
+                        .propose(id, revision, "", None, None, "undo")
+                        .unwrap();
+                    session
+                        .record(id, revision, session.get_proposal(id).unwrap(), pass())
+                        .unwrap();
+                    session.acceptance(id, revision).unwrap();
+                }
+                let reopened = fixture.session().project().unwrap();
+                assert_eq!(reopened["cards"][0]["body"], body);
+                assert_eq!(reopened["revision"], 3);
+            } else {
+                assert_eq!(opened.unwrap_err(), "Invalid single-card undo history");
+                assert!(session.root.is_none());
+                assert_eq!(fs::read(&path).unwrap(), before);
+                assert!(!fixture.0.join(".artificer").exists());
+            }
+        }
     }
     #[test]
     fn acceptance_requires_editor_and_undo_advances_revision() {
