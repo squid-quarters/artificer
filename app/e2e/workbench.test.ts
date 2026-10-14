@@ -90,6 +90,140 @@ async function evidence(page: Page, name: string) {
   });
 }
 
+test("keyboard regions preserve boundaries, editing and acceptance focus", async ({ page }) => {
+  await page.setViewportSize({ width: 1120, height: 1000 });
+  const app = await harness(page);
+  try {
+    await open(page, app.root);
+    const original = await app.saved();
+    await page.getByLabel("Rules text", { exact: true }).fill("Dense review text ".repeat(100));
+    await page.getByRole("button", { name: "Preview editor change", exact: true }).focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("heading", { name: "Review change", exact: true })).toBeFocused();
+    await expect(page.getByTestId("validation-status")).toHaveAttribute("data-status", "fail");
+    const rules = page.getByRole("region", { name: "After rules text" });
+    await rules.focus();
+    const top = () => rules.evaluate((el) => el.scrollTop);
+    const bottom = () => rules.evaluate((el) => el.scrollHeight - el.clientHeight);
+    expect(await bottom()).toBeGreaterThan(0);
+    await page.keyboard.press("ArrowDown");
+    await expect.poll(top).toBeGreaterThan(0);
+    await page.keyboard.press("ArrowUp");
+    await expect.poll(top).toBe(0);
+    await page.keyboard.press("PageDown");
+    await expect.poll(top).toBeGreaterThan(40);
+    await page.keyboard.press("PageUp");
+    await expect.poll(top).toBe(0);
+    await page.keyboard.press("End");
+    await expect.poll(top).toBe(await bottom());
+    await page.keyboard.press("Home");
+    await expect.poll(top).toBe(0);
+    await expect(rules).toBeFocused();
+
+    // Observe cancellation after the app handler; emitted keys alone are insufficient.
+    await page.evaluate(() => {
+      (window as any).regionKeys = [];
+      window.addEventListener("keydown", (event) => {
+        (window as any).regionKeys.push({ key: event.key, prevented: event.defaultPrevented });
+      });
+    });
+    await page.keyboard.press("ArrowUp");
+    expect(await page.evaluate(() => (window as any).regionKeys.at(-1))).toEqual({
+      key: "ArrowUp",
+      prevented: false,
+    });
+    await page.keyboard.press("End");
+    await page.keyboard.press("ArrowDown");
+    expect(await page.evaluate(() => (window as any).regionKeys.at(-1))).toEqual({
+      key: "ArrowDown",
+      prevented: false,
+    });
+    await page.keyboard.press("Home");
+    await page.keyboard.press("ArrowDown");
+    expect(await page.evaluate(() => (window as any).regionKeys.at(-1))).toEqual({
+      key: "ArrowDown",
+      prevented: true,
+    });
+
+    // Synthetic events isolate modifier handling from browser shortcuts/default scrolling.
+    for (const modifier of ["altKey", "ctrlKey", "metaKey", "shiftKey"]) {
+      const result = await rules.evaluate((el, modifier) => {
+        const before = el.scrollTop;
+        const event = new KeyboardEvent("keydown", {
+          key: "ArrowDown",
+          bubbles: true,
+          cancelable: true,
+          [modifier]: true,
+        });
+        el.dispatchEvent(event);
+        return { before, after: el.scrollTop, prevented: event.defaultPrevented };
+      }, modifier);
+      expect(result.after).toBe(result.before);
+      expect(result.prevented).toBe(false);
+    }
+
+    await page.getByRole("button", { name: "Compare cards", exact: true }).click();
+    const canvas = page.getByRole("region", { name: "Card preview canvas" });
+    await canvas.focus();
+    const left = () => canvas.evaluate((el) => el.scrollLeft);
+    const right = () => canvas.evaluate((el) => el.scrollWidth - el.clientWidth);
+    expect(await right()).toBeGreaterThan(0);
+    expect(await canvas.evaluate((el) => el.scrollHeight - el.clientHeight)).toBe(0);
+    await page.keyboard.press("ArrowRight");
+    await expect.poll(left).toBeGreaterThan(0);
+    await page.keyboard.press("ArrowLeft");
+    await expect.poll(left).toBe(0);
+    await page.keyboard.press("End");
+    await expect.poll(left).toBe(await right());
+    await page.keyboard.press("Home");
+    await expect.poll(left).toBe(0);
+    await expect(canvas).toBeFocused();
+
+    // A controlled descendant fixture guards bubbling without adding an editable card UI.
+    await page.keyboard.press("ArrowRight");
+    await expect.poll(left).toBeGreaterThan(0);
+    expect(await left()).toBeLessThan(await right());
+    await canvas.evaluate((el) => {
+      const input = document.createElement("textarea");
+      input.id = "keyboard-descendant-fixture";
+      input.value = "editable child";
+      el.append(input);
+      input.focus();
+      input.setSelectionRange(5, 5);
+    });
+    const child = page.locator("#keyboard-descendant-fixture");
+    const beforeChild = await left();
+    expect(beforeChild).toBeGreaterThan(0);
+    await page.keyboard.press("ArrowLeft");
+    await expect.poll(() => child.evaluate((el: HTMLTextAreaElement) => el.selectionStart)).toBe(4);
+    expect(await left()).toBe(beforeChild);
+    expect(await page.evaluate(() => (window as any).regionKeys.at(-1).prevented)).toBe(false);
+    await child.evaluate((el) => el.remove());
+    expect(await app.saved()).toEqual(original);
+
+    await page.getByRole("button", { name: "Return to current card", exact: true }).click();
+    const body = page.getByLabel("Rules text", { exact: true });
+    await body.fill("Gain two focus.");
+    await body.focus();
+    await body.evaluate((el: HTMLTextAreaElement) => el.setSelectionRange(5, 5));
+    await page.keyboard.press("ArrowLeft");
+    await expect.poll(() => body.evaluate((el: HTMLTextAreaElement) => el.selectionStart)).toBe(4);
+    await page.getByRole("button", { name: "Preview editor change", exact: true }).focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByRole("heading", { name: "Review change", exact: true })).toBeFocused();
+    await expect(page.getByTestId("validation-status")).toHaveAttribute("data-status", "pass");
+    await page.getByRole("button", { name: "Accept preview", exact: true }).focus();
+    await page.keyboard.press("Enter");
+    await expect(page.getByTestId("revision")).toHaveText("Revision 2");
+    await expect(page.locator(".canvas-toolbar h2")).toBeFocused();
+    expect((await app.saved()).cards[0].body).toBe("Gain two focus.");
+    await page.keyboard.press("Tab");
+    await expect(canvas).toBeFocused();
+  } finally {
+    await app.cleanup();
+  }
+});
+
 test("workbench supports measured editor review, keyboard comparison, explicit acceptance and undo", async ({
   page,
 }) => {
