@@ -8,7 +8,7 @@ and accepted-command receipts live in that JSON. Asset hashes are checked before
 rendering. Only static self-contained SVG fixtures are supported initially.
 
 A proposal includes an idempotency key, expected revision, project content hash,
-card ID and explicit rules-text/variant changes. Template geometry and symbols
+card ID and explicit title/rules-text/variant changes. Template geometry and symbols
 cannot be overridden by these tools. Alternate art keeps the same gameplay record.
 There is no text-generation or repair routine.
 
@@ -47,7 +47,7 @@ cooperating-writer contract.
 The descriptor implementation currently requires POSIX platforms and is verified
 on macOS. A separate Windows implementation is needed before claiming support.
 Project files are bounded to 5 MB and rules text to 20 KB in this initial slice;
-these are resource limits, not text-fit or game-design defaults.
+these are resource limits, not text-fit or game-design defaults. The approved title extension below uses the same ceiling for new title changes.
 
 ## MCP surface
 
@@ -77,7 +77,7 @@ no product-wide rule, language policy or permitted repair policy selected.
 
 Print profile stays null: no physical trim, bleed, DPI or provider defaults are
 invented. Body/symbol checks do not constitute whole-card print preflight.
-Title/footer fit, multi-card project operations, special frames, renderer/export
+Footer fit, multi-card project operations, special frames, renderer/export
 parity across Chromium/WebKit, and production packaging remain follow-up work.
 
 ## Acceptance evidence
@@ -95,3 +95,30 @@ New geometric SVGs and icon replace no files in the original prototype. The old
 45 asset files and recovered skill bundles are not present in this tree/history.
 Project licensing remains a separate decision; dependency declarations do not
 supply a project reuse grant.
+
+
+## Approved title-authoring extension
+
+The owner approved editable titles through UI and MCP with overflow blocking
+acceptance, without shrinking or rewriting. The neutral template declares
+`titleRegion` (24,22; 247 × 40 logical pixels), `titleFontPx` (25) and
+`titleLineHeightPx` (35). These are fixture geometry, not universal card defaults.
+Actual DOM title fragments and scroll extents are checked against the declared
+box; overlap with body, shared symbol, art or footer is a title-region failure.
+Body widow/minimum-font policy and the fixed fixture footer are unchanged.
+
+`propose_change` accepts an optional `title`; omission means unchanged. Title
+changes participate in exact preview identity, immutable proposal IDs, durable
+receipts, before/after review, stale refusal and undo. A dirty title draft is
+retained along with unrelated rules/art drafts. MCP still cannot validate or
+accept. New title changes and bounded-template current/history titles use the
+existing 20,000-byte text ceiling; project files remain bounded to 5 MB.
+
+Schema version remains 1. Older templates without title declarations stay
+readable and keep body/art authoring; their previously unbounded titles are not
+silently truncated or migrated. Title editing is unavailable until their
+owned template explicitly declares all three title fields. Existing proposals
+without title retain their serialized shape and prior payload/receipt hashes.
+Old passing reports are not permission to accept a new title change.
+
+Title checks do not establish footer, whole-card print or native keyboard parity.

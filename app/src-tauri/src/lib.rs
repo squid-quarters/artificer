@@ -65,13 +65,14 @@ fn editor_proposal(
     revision: u64,
     card_id: String,
     body: Option<String>,
+    title: Option<String>,
     variant_id: Option<String>,
     kind: String,
 ) -> Result<Value, String> {
     run_command(
         state,
         "editor_proposal",
-        json!({"revision":revision,"cardId":card_id,"body":body,"variantId":variant_id,"kind":kind}),
+        json!({"revision":revision,"cardId":card_id,"body":body,"variantId":variant_id,"kind":kind,"title":title}),
     )
 }
 #[tauri::command]

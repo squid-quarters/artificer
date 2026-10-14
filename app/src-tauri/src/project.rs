@@ -29,7 +29,12 @@ fn hash(bytes: &[u8]) -> String {
     format!("{:x}", Sha256::digest(bytes))
 }
 fn payload_hash(proposal: &Proposal) -> Result<String> {
-    Ok(hash(&serde_json::to_vec(&json!({"id":proposal.id,"expectedRevision":proposal.expected_revision,"expectedProjectHash":proposal.expected_project_hash,"cardId":proposal.card_id,"body":proposal.body,"variantId":proposal.variant_id,"kind":proposal.kind})).map_err(err)?))
+    let mut payload = json!({"id":proposal.id,"expectedRevision":proposal.expected_revision,"expectedProjectHash":proposal.expected_project_hash,"cardId":proposal.card_id,"body":proposal.body,"variantId":proposal.variant_id,"kind":proposal.kind});
+    // Omit absent title changes to preserve durable receipts from older releases.
+    if let Some(title) = &proposal.title {
+        payload["title"] = json!(title);
+    }
+    Ok(hash(&serde_json::to_vec(&payload).map_err(err)?))
 }
 fn id_ok(id: &str) -> bool {
     !id.is_empty()
@@ -53,6 +58,8 @@ pub struct Proposal {
     pub kind: String,
     pub status: String,
     pub accepted_revision: Option<u64>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub title: Option<String>,
 }
 #[derive(Default)]
 pub struct Session {
@@ -142,9 +149,19 @@ impl Session {
             return Err("Invalid accepted command journal".into());
         }
         let card = &p["cards"][0];
+        let current_template = p["templates"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|t| t["id"] == p["cards"][0]["templateId"])
+            .ok_or("Unknown template")?;
+
         for h in p["history"].as_array().unwrap() {
             if h["cards"][0]["id"] != card["id"]
                 || h["cards"][0]["templateId"] != card["templateId"]
+                || h["cards"][0]["title"].as_str().is_none_or(|s| {
+                    current_template.get("titleRegion").is_some() && s.len() > MAX_BODY_BYTES
+                })
                 || h["cards"][0]["body"]
                     .as_str()
                     .is_none_or(|s| s.len() > MAX_BODY_BYTES)
@@ -153,6 +170,38 @@ impl Session {
             }
         }
         for t in p["templates"].as_array().unwrap() {
+            if t.get("titleRegion").is_some()
+                || t.get("titleFontPx").is_some()
+                || t.get("titleLineHeightPx").is_some()
+            {
+                if !t["titleLineHeightPx"]
+                    .as_f64()
+                    .is_some_and(|v| v > 0.0 && v <= 2000.0)
+                {
+                    return Err("Invalid title line height".into());
+                }
+                let region = &t["titleRegion"];
+                for key in ["x", "y", "width", "height"] {
+                    if !region[key]
+                        .as_f64()
+                        .is_some_and(|v| v >= 0.0 && v <= 2000.0)
+                    {
+                        return Err("Invalid title region".into());
+                    }
+                }
+                if region["width"].as_f64().unwrap() <= 0.0
+                    || region["height"].as_f64().unwrap() <= 0.0
+                    || region["x"].as_f64().unwrap() + region["width"].as_f64().unwrap()
+                        > t["width"].as_f64().unwrap_or(0.0)
+                    || region["y"].as_f64().unwrap() + region["height"].as_f64().unwrap()
+                        > t["height"].as_f64().unwrap_or(0.0)
+                    || !t["titleFontPx"]
+                        .as_f64()
+                        .is_some_and(|v| v > 0.0 && v <= 2000.0)
+                {
+                    return Err("Invalid title region/font".into());
+                }
+            }
             for key in ["width", "height", "fontPx", "minFontPx"] {
                 if !t[key].as_f64().is_some_and(|v| v > 0.0 && v <= 2000.0) {
                     return Err("Invalid template geometry/font constraint".into());
@@ -190,12 +239,6 @@ impl Session {
                 return Err("Template symbol must match the shared registry".into());
             }
         }
-        let current_template = p["templates"]
-            .as_array()
-            .unwrap()
-            .iter()
-            .find(|t| t["id"] == p["cards"][0]["templateId"])
-            .ok_or("Unknown template")?;
         for h in p["history"].as_array().unwrap() {
             if !current_template["variants"]
                 .as_array()
@@ -209,6 +252,9 @@ impl Session {
         }
         for card in p["cards"].as_array().unwrap() {
             if !card["id"].as_str().is_some_and(id_ok)
+                || card["title"].as_str().is_none_or(|s| {
+                    current_template.get("titleRegion").is_some() && s.len() > MAX_BODY_BYTES
+                })
                 || card["body"]
                     .as_str()
                     .is_none_or(|s| s.len() > MAX_BODY_BYTES)
@@ -316,6 +362,18 @@ impl Session {
         variant_id: Option<String>,
         kind: &str,
     ) -> Result<Proposal> {
+        self.propose_with_title(id, revision, card_id, body, variant_id, kind, None)
+    }
+    pub fn propose_with_title(
+        &self,
+        id: &str,
+        revision: u64,
+        card_id: &str,
+        body: Option<String>,
+        variant_id: Option<String>,
+        kind: &str,
+        title: Option<String>,
+    ) -> Result<Proposal> {
         let _lock = self.lock()?;
         let path = Self::proposal_path(id)?;
         if self.root()?.exists(&path)? {
@@ -325,6 +383,7 @@ impl Session {
                 && existing.body == body
                 && existing.variant_id == variant_id
                 && existing.kind == kind
+                && existing.title == title
             {
                 return Ok(existing);
             }
@@ -340,6 +399,12 @@ impl Session {
         if body.as_ref().is_some_and(|s| s.len() > MAX_BODY_BYTES) {
             return Err("Rules text size limit".into());
         }
+        if title.as_ref().is_some_and(|s| s.len() > MAX_BODY_BYTES) {
+            return Err("Title text size limit".into());
+        }
+        if kind == "undo" && title.is_some() {
+            return Err("Undo cannot include title changes".into());
+        }
         let request = Proposal {
             id: id.into(),
             expected_revision: revision,
@@ -350,12 +415,27 @@ impl Session {
             kind: kind.into(),
             status: "pending".into(),
             accepted_revision: None,
+            title,
         };
         self.apply(&p, &request)?;
         self.atomic(&path, &serde_json::to_value(&request).map_err(err)?)?;
         Ok(request)
     }
     fn apply(&self, p: &Value, proposal: &Proposal) -> Result<Value> {
+        if proposal
+            .title
+            .as_ref()
+            .is_some_and(|s| s.len() > MAX_BODY_BYTES)
+        {
+            return Err("Title text size limit".into());
+        }
+        if proposal
+            .body
+            .as_ref()
+            .is_some_and(|s| s.len() > MAX_BODY_BYTES)
+        {
+            return Err("Rules text size limit".into());
+        }
         let mut next = p.clone();
         if proposal.kind == "undo" {
             let previous = p["history"]
@@ -378,6 +458,12 @@ impl Session {
             .iter()
             .find(|t| t["id"] == p["cards"][index]["templateId"])
             .ok_or("Unknown template")?;
+        if let Some(title) = &proposal.title {
+            if t.get("titleRegion").is_none() {
+                return Err("Title editing requires a declared template region".into());
+            }
+            next["cards"][index]["title"] = json!(title);
+        }
         if let Some(body) = &proposal.body {
             next["cards"][index]["body"] = json!(body);
         }
@@ -542,13 +628,14 @@ impl Session {
                 args["id"].as_str().ok_or("Missing proposal ID")?,
                 args["revision"].as_u64().ok_or("Missing revision")?,
             ),
-            "editor_proposal" => serde_json::to_value(self.propose(
+            "editor_proposal" => serde_json::to_value(self.propose_with_title(
                 &format!("editor-{}", nonce()),
                 args["revision"].as_u64().ok_or("Missing revision")?,
                 args["cardId"].as_str().ok_or("Missing card ID")?,
                 optional_string(args, "body")?,
                 optional_string(args, "variantId")?,
                 args["kind"].as_str().unwrap_or("edit"),
+                optional_string(args, "title")?,
             )?)
             .map_err(err),
             _ => Err("Unknown editor command".into()),
@@ -614,6 +701,187 @@ mod tests {
     }
     fn pass() -> Value {
         json!({"status":"pass","diagnostics":[],"environment":"unit test seam"})
+    }
+    #[test]
+    fn title_changes_preserve_authority_receipts_and_undo() {
+        let fixture = Fixture::new();
+        let mut s = fixture.session();
+        let original = s.project().unwrap();
+        let proposal = s
+            .propose_with_title(
+                "title-edit",
+                1,
+                "fixture-card",
+                None,
+                None,
+                "edit",
+                Some("New Focus".into()),
+            )
+            .unwrap();
+        assert!(s.acceptance("title-edit", 1).is_err());
+        assert!(s
+            .propose_with_title(
+                "title-edit",
+                1,
+                "fixture-card",
+                None,
+                None,
+                "edit",
+                Some("Other Focus".into())
+            )
+            .is_err());
+        s.record("title-edit", 1, proposal.clone(), pass()).unwrap();
+        assert_eq!(
+            s.acceptance("title-edit", 1).unwrap()["cards"][0]["title"],
+            "New Focus"
+        );
+        assert_eq!(fixture.session().project().unwrap()["revision"], 2);
+        assert_eq!(s.acceptance("title-edit", 1).unwrap()["revision"], 2);
+        let path = fixture.0.join(".artificer/requests/title-edit.json");
+        let mut tampered = proposal.clone();
+        tampered.title = Some("Tampered title".into());
+        fs::write(&path, serde_json::to_vec(&tampered).unwrap()).unwrap();
+        assert!(s.get_proposal("title-edit").is_err());
+        fs::write(&path, serde_json::to_vec(&proposal).unwrap()).unwrap();
+        s.propose("undo-title", 2, "", None, None, "undo").unwrap();
+        s.record(
+            "undo-title",
+            2,
+            s.get_proposal("undo-title").unwrap(),
+            pass(),
+        )
+        .unwrap();
+        let restored = s.acceptance("undo-title", 2).unwrap();
+        assert_eq!(restored["cards"], original["cards"]);
+        assert_eq!(restored["templates"], original["templates"]);
+    }
+    #[test]
+    fn legacy_templates_proposals_and_receipt_hashes_remain_compatible() {
+        let fixture = Fixture::new();
+        let path = fixture.0.join("project.artificer.json");
+        let mut p: Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+        p["templates"][0]
+            .as_object_mut()
+            .unwrap()
+            .remove("titleRegion");
+        p["templates"][0]
+            .as_object_mut()
+            .unwrap()
+            .remove("titleFontPx");
+        p["templates"][0]
+            .as_object_mut()
+            .unwrap()
+            .remove("titleLineHeightPx");
+        p["cards"][0]["title"] = json!(" ".repeat(20_001));
+        fs::write(&path, serde_json::to_vec(&p).unwrap()).unwrap();
+        let mut s = fixture.session();
+        let old = s
+            .propose(
+                "legacy",
+                1,
+                "fixture-card",
+                Some("Gain two focus.".into()),
+                None,
+                "edit",
+            )
+            .unwrap();
+        let serialized = serde_json::to_value(&old).unwrap();
+        assert!(serialized.get("title").is_none());
+        let legacy: Proposal = serde_json::from_value(serialized).unwrap();
+        let old_payload = json!({"id":legacy.id,"expectedRevision":legacy.expected_revision,"expectedProjectHash":legacy.expected_project_hash,"cardId":legacy.card_id,"body":legacy.body,"variantId":legacy.variant_id,"kind":legacy.kind});
+        assert_eq!(
+            payload_hash(&legacy).unwrap(),
+            hash(&serde_json::to_vec(&old_payload).unwrap())
+        );
+        s.record("legacy", 1, legacy, pass()).unwrap();
+        s.acceptance("legacy", 1).unwrap();
+        assert_eq!(
+            fixture
+                .session()
+                .get_proposal("legacy")
+                .unwrap()
+                .accepted_revision,
+            Some(2)
+        );
+        assert_eq!(
+            fixture.session().acceptance("legacy", 1).unwrap()["revision"],
+            2
+        );
+        assert!(s
+            .propose_with_title(
+                "no-region",
+                2,
+                "fixture-card",
+                None,
+                None,
+                "edit",
+                Some("New title".into())
+            )
+            .unwrap_err()
+            .contains("declared template region"));
+    }
+    #[test]
+    fn title_resource_and_region_limits_are_checked() {
+        let fixture = Fixture::new();
+        let s = fixture.session();
+        s.propose_with_title(
+            "boundary",
+            1,
+            "fixture-card",
+            None,
+            None,
+            "edit",
+            Some("é".repeat(10_000)),
+        )
+        .unwrap();
+        assert!(s
+            .propose_with_title(
+                "oversized",
+                1,
+                "fixture-card",
+                None,
+                None,
+                "edit",
+                Some("é".repeat(10_001))
+            )
+            .is_err());
+        let mut pending = s.get_proposal("boundary").unwrap();
+        pending.title = Some(" ".repeat(20_001));
+        assert!(s.apply(&s.project().unwrap(), &pending).is_err());
+        let path = fixture.0.join("project.artificer.json");
+        let original = s.project().unwrap();
+        drop(s);
+        for field in ["current", "history", "region", "font"] {
+            let mut p = original.clone();
+            match field {
+                "current" => p["cards"][0]["title"] = json!(" ".repeat(20_001)),
+                "history" => {
+                    let mut previous = p["cards"][0].clone();
+                    previous["title"] = json!(" ".repeat(20_001));
+                    p["history"] = json!([{"cards":[previous],"commandId":"invalid"}]);
+                }
+                "region" => p["templates"][0]["titleRegion"]["width"] = json!(2000),
+                _ => p["templates"][0]["titleFontPx"] = Value::Null,
+            }
+            fs::write(&path, serde_json::to_vec(&p).unwrap()).unwrap();
+            assert!(Session::default()
+                .open(fixture.0.to_str().unwrap())
+                .is_err());
+        }
+    }
+    #[test]
+    fn project_file_limit_remains_unchanged_with_title_metadata() {
+        let fixture = Fixture::new();
+        let path = fixture.0.join("project.artificer.json");
+        let mut p: Value = serde_json::from_slice(&fs::read(&path).unwrap()).unwrap();
+        p["syntheticPadding"] = json!(" ".repeat(5_000_000));
+        let bytes = serde_json::to_vec(&p).unwrap();
+        fs::write(&path, &bytes).unwrap();
+        assert!(Session::default()
+            .open(fixture.0.to_str().unwrap())
+            .unwrap_err()
+            .contains("size limit"));
+        assert_eq!(fs::read(&path).unwrap(), bytes);
     }
     #[test]
     fn undo_history_obeys_current_body_byte_limit() {

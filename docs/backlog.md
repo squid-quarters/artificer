@@ -34,7 +34,7 @@ MCP slice; broader phase ordering remains a proposal. There are no invented issu
 ## First source slice
 
 The approved architecture is implemented for one card per project with original
-neutral fixtures. MCP proposals, actual body/symbol validation, editor acceptance,
+neutral fixtures. MCP proposals, actual declared-title/body/symbol validation, editor acceptance,
 revision/content-hash checks and undo are covered by native and browser tests.
 Multiple-card operations, print output, special frames, asset import and broader
 MCP preview/export remain follow-up work. Recovery counts above are historical.
@@ -56,3 +56,12 @@ tracker migration are created by these documents.
 layout, before/after proposal review and visible stale-preview handling. This
 does not resolve print profiles, production widow/repair policy, licensing,
 tracker choice or multi-card/special-frame scope.
+
+
+## Approved title slice
+
+Title editing through UI/MCP, explicit neutral-template title bounds, rejecting
+rendered overflow/overlap, before/after review and shared acceptance/undo are
+implemented. Legacy project/proposal/receipt compatibility is retained as described
+in [the title contract](first-slice.md#approved-title-authoring-extension). Footer,
+asset import, multiple-card operations, print/export and packaging remain open.

@@ -72,7 +72,7 @@ stateDiagram-v2
 
 Print readiness is a separate state that remains unavailable until a real output
 profile is selected and print checks exist. “Validation pass” currently means
-body/symbol checks only, not export approval.
+declared-title/body/symbol checks, not footer or export approval. Legacy templates without title bounds keep body/symbol checks only.
 
 ## Choices that actually gate the next work
 

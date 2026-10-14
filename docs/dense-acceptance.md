@@ -50,3 +50,9 @@ All seven catalog cases and the original end-to-end workflow pass (8/8) in
 Chromium on macOS using the real Rust backend. Type checks, lint, formatting,
 4 TypeScript tests and 11 native regressions pass. This follow-up changes only
 fixture data, test code and documentation.
+
+
+The later owner-approved [title extension](first-slice.md#approved-title-authoring-extension)
+adds independent title-overflow and UI/MCP acceptance coverage. The historical
+catalog above still targets body/variant behavior; its original execution record
+is not a native keyboard or whole-card print claim.
