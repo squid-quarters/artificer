@@ -1,8 +1,64 @@
 import type { Diagnostic, Template, Validation } from "#lib/model.ts";
 
+function sameFace(face: FontFace, weight: string) {
+  const family = face.family.replace(/["']/g, "").trim().toLowerCase();
+  return (
+    family === "crimson text" &&
+    face.style === "normal" &&
+    face.weight === weight &&
+    face.status === "loaded"
+  );
+}
+async function requireCardFonts(body: HTMLElement): Promise<Diagnostic[]> {
+  const title = body.closest("article")?.querySelector<HTMLElement>('[data-testid="card-title"]');
+  const required = [
+    { element: body, weight: "400", regionId: "body" },
+    { element: title, weight: "700", regionId: "title" },
+  ];
+  const results = await Promise.all(
+    required.map(async ({ element, weight, regionId }) => {
+      const failure: Diagnostic = {
+        code: "font-unavailable",
+        regionId,
+        message: `Required Crimson Text normal ${weight} face is not loaded. Restore the bundled fonts and preview again.`,
+      };
+      if (!element) return failure;
+      const style = getComputedStyle(element);
+      const family = style.fontFamily.split(",")[0].replace(/["']/g, "").trim().toLowerCase();
+      if (family !== "crimson text" || style.fontStyle !== "normal" || style.fontWeight !== weight)
+        return failure;
+      try {
+        // A fixed probe requires a real face even when this card region is empty.
+        const faces = await document.fonts.load(
+          `normal ${weight} ${style.fontSize} "Crimson Text"`,
+          `Aa ${element.textContent ?? ""}`,
+        );
+        if (
+          !faces.length ||
+          !faces.every((face) => sameFace(face, weight) && document.fonts.has(face))
+        )
+          return failure;
+      } catch {
+        return failure;
+      }
+      return null;
+    }),
+  );
+  return results.filter((result): result is Diagnostic => result !== null);
+}
+
 // Measures the actual DOM at its logical preview size. This is not print preflight.
 export async function measure(body: HTMLElement, template: Template): Promise<Validation> {
   await document.fonts.ready;
+  const fontDiagnostics = await requireCardFonts(body);
+  if (fontDiagnostics.length)
+    return {
+      status: "fail",
+      diagnostics: fontDiagnostics,
+      finalLineWords: 0,
+      lineCount: 0,
+      environment: navigator.userAgent,
+    };
   for (const image of Array.from(body.closest("article")?.querySelectorAll("img") ?? [])) {
     await image.decode();
   }

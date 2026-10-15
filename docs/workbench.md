@@ -95,3 +95,10 @@ before/after title text. Title overflow or overlap blocks acceptance with a
 undo/reopen, title-only stale replacement, dirty title retention and legacy body
 workflows are covered by real-backend Chromium/WebKit tests. See
 [title contract and compatibility](first-slice.md#approved-title-authoring-extension).
+
+
+Font availability is a validation prerequisite. Missing required body/title
+faces show a region-specific failure and "Layout not measured", with acceptance
+disabled. Restoring resources and reloading the workbench requires another
+preview; existing proposals and accepted receipts are retained. See
+[font readiness](first-slice.md#font-readiness-before-layout-validation).

@@ -122,3 +122,21 @@ without title retain their serialized shape and prior payload/receipt hashes.
 Old passing reports are not permission to accept a new title change.
 
 Title checks do not establish footer, whole-card print or native keyboard parity.
+
+
+## Font readiness before layout validation
+
+The renderer requires actual loaded Crimson Text normal 400 (body) and normal
+700 (title) faces, including empty titles and legacy templates. It checks the
+rendered family/style/weight and the nonempty result of explicit font loading;
+every returned face must match and still belong to the current font set.
+`document.fonts.ready`, `fonts.check`, or a resolved empty `fonts.load` result
+alone do not prove that these faces exist or loaded successfully.
+
+Missing declarations, failed WOFF2/WOFF requests or mismatched faces produce
+`font-unavailable` diagnostics for body/title and block acceptance before layout
+measurement. Counts are zero placeholders for this failed report; the UI says
+"Layout not measured". Delayed faces are awaited. Recovery requires restored
+bundled resources and a fresh measured preview; a replaced proposal cannot use
+the earlier pending preview. No dependencies, font substitution, automatic text
+repair, font installation or print/glyph-coverage guarantee is introduced.

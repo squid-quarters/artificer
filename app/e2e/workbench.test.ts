@@ -108,6 +108,318 @@ async function evidence(page: Page, name: string) {
   });
 }
 
+const cardFontRequest = /crimson-text-[^/]*-(400|700)-normal[^/]*\.woff2?(?:\?.*)?$/;
+async function removeCardFontDeclarations(page: Page, weights: number[]) {
+  return page.evaluate((weights) => {
+    let removed = 0;
+    for (const sheet of Array.from(document.styleSheets)) {
+      for (let index = sheet.cssRules.length - 1; index >= 0; index--) {
+        const rule = sheet.cssRules[index];
+        if (rule.type !== CSSRule.FONT_FACE_RULE) continue;
+        const style = (rule as CSSFontFaceRule).style;
+        if (
+          style.fontFamily.replace(/["']/g, "").toLowerCase() === "crimson text" &&
+          weights.includes(Number(style.fontWeight))
+        ) {
+          sheet.deleteRule(index);
+          removed++;
+        }
+      }
+    }
+    return removed;
+  }, weights);
+}
+async function expectFontFailure(
+  page: Page,
+  app: Awaited<ReturnType<typeof harness>>,
+  original: any,
+  regions: string[] = [],
+) {
+  await expect(page.getByTestId("validation-status")).toHaveAttribute("data-status", "fail");
+  await expect(page.getByRole("button", { name: "Accept preview", exact: true })).toBeDisabled();
+  const id = await page.getByTestId("review-proposal-id").innerText();
+  const result = await app.tool("get_proposal", { id });
+  expect(result.structuredContent.validation.status).toBe("fail");
+  expect(result.structuredContent.validation.lineCount).toBe(0);
+  expect(result.structuredContent.validation.finalLineWords).toBe(0);
+  await expect(
+    page.getByRole("main").getByText("Layout not measured", { exact: true }),
+  ).toBeVisible();
+  await expect(page.getByRole("main").getByText(/rendered lines|final-line words/)).toHaveCount(0);
+  expect(result.structuredContent.validation.diagnostics).toContainEqual(
+    expect.objectContaining({ code: "font-unavailable" }),
+  );
+  for (const regionId of regions)
+    expect(result.structuredContent.validation.diagnostics).toContainEqual(
+      expect.objectContaining({ code: "font-unavailable", regionId }),
+    );
+  expect(await app.saved()).toEqual(original);
+  expect((await app.saved()).acceptedCommands).toEqual(original.acceptedCommands);
+}
+for (const weights of [[400], [700], [400, 700]]) {
+  test(`font readiness rejects blocked normal ${weights.join("+")} WOFF2 and WOFF`, async ({
+    page,
+  }) => {
+    const seen: { weight: number; format: string }[] = [];
+    await page.route(cardFontRequest, async (route) => {
+      const path = new URL(route.request().url()).pathname;
+      const weight = Number(path.match(/-(400|700)-normal/)![1]);
+      if (weights.includes(weight)) {
+        seen.push({ weight, format: path.endsWith(".woff2") ? "woff2" : "woff" });
+        await route.abort();
+      } else await route.continue();
+    });
+    const app = await harness(page);
+    try {
+      await open(page, app.root);
+      const original = await app.saved();
+      await page.getByLabel("Rules text", { exact: true }).fill("Gain two focus.");
+      await page.getByRole("button", { name: "Preview editor change", exact: true }).click();
+      for (const weight of weights)
+        for (const format of ["woff2", "woff"]) {
+          await expect
+            .poll(() => seen.some((item) => item.weight === weight && item.format === format))
+            .toBe(true);
+        }
+      await expectFontFailure(
+        page,
+        app,
+        original,
+        weights.map((weight) => (weight === 400 ? "body" : "title")),
+      );
+      if (weights.length === 2) {
+        await page.unroute(cardFontRequest);
+        await page.reload();
+        await open(page, app.root);
+        await page.getByLabel("Rules text", { exact: true }).fill("Gain two focus.");
+        await page.getByRole("button", { name: "Preview editor change", exact: true }).click();
+        await expect(page.getByTestId("validation-status")).toHaveAttribute("data-status", "pass");
+        const loaded = await page.evaluate(() =>
+          Array.from(document.fonts)
+            .filter(
+              (face) =>
+                face.family.replace(/["']/g, "").toLowerCase() === "crimson text" &&
+                face.style === "normal" &&
+                face.status === "loaded",
+            )
+            .map((face) => Number(face.weight)),
+        );
+        expect(loaded).toEqual(expect.arrayContaining([400, 700]));
+        expect(await app.saved()).toEqual(original);
+        await page.getByRole("button", { name: "Accept preview", exact: true }).click();
+        await expect(page.getByTestId("revision")).toHaveText("Revision 2");
+      }
+    } finally {
+      await app.cleanup();
+    }
+  });
+  test(`font readiness rejects missing normal ${weights.join("+")} declarations`, async ({
+    page,
+  }) => {
+    const app = await harness(page);
+    try {
+      expect(await removeCardFontDeclarations(page, weights)).toBeGreaterThan(0);
+      await open(page, app.root);
+      const original = await app.saved();
+      if (weights.length === 2) {
+        const fallback = await page.evaluate(async () => ({
+          checked: document.fonts.check('normal 400 18px "Crimson Text"', "Aa"),
+          count: (await document.fonts.load('normal 400 18px "Crimson Text"', "Aa")).length,
+        }));
+        expect(fallback).toEqual({ checked: true, count: 0 });
+      }
+      await page.getByLabel("Rules text", { exact: true }).fill("Gain two focus.");
+      await page.getByRole("button", { name: "Preview editor change", exact: true }).click();
+      await expectFontFailure(
+        page,
+        app,
+        original,
+        weights.map((weight) => (weight === 400 ? "body" : "title")),
+      );
+    } finally {
+      await app.cleanup();
+    }
+  });
+}
+test("font readiness rejects a loaded face with the wrong style", async ({ page }) => {
+  const app = await harness(page);
+  try {
+    const loaded = await page.evaluate(async () => {
+      let changed = 0;
+      for (const sheet of Array.from(document.styleSheets))
+        for (const rule of Array.from(sheet.cssRules)) {
+          if (rule.type !== CSSRule.FONT_FACE_RULE) continue;
+          const style = (rule as CSSFontFaceRule).style;
+          if (
+            style.fontFamily.replace(/["']/g, "").toLowerCase() === "crimson text" &&
+            style.fontWeight === "700"
+          ) {
+            style.setProperty("font-style", "italic");
+            changed++;
+          }
+        }
+      const faces = await document.fonts.load('italic 700 25px "Crimson Text"', "Aa");
+      return {
+        changed,
+        signatures: faces.map((face) => ({
+          style: face.style,
+          weight: face.weight,
+          status: face.status,
+        })),
+      };
+    });
+    expect(loaded.changed).toBeGreaterThan(0);
+    expect(loaded.signatures.length).toBeGreaterThan(0);
+    expect(
+      loaded.signatures.every(
+        (face) => face.style === "italic" && face.weight === "700" && face.status === "loaded",
+      ),
+    ).toBe(true);
+    await open(page, app.root);
+    const original = await app.saved();
+    await page.getByLabel("Rules text", { exact: true }).fill("Gain two focus.");
+    await page.getByRole("button", { name: "Preview editor change", exact: true }).click();
+    await expectFontFailure(page, app, original, ["title"]);
+  } finally {
+    await app.cleanup();
+  }
+});
+
+test("font readiness requires normal700 even for an empty title", async ({ page }) => {
+  const app = await harness(page);
+  try {
+    expect(await removeCardFontDeclarations(page, [700])).toBeGreaterThan(0);
+    await open(page, app.root);
+    const original = await app.saved();
+    await page.getByLabel("Card title", { exact: true }).fill("");
+    await page.getByLabel("Rules text", { exact: true }).fill("");
+    await page.getByRole("button", { name: "Preview editor change", exact: true }).click();
+    await expectFontFailure(page, app, original, ["title"]);
+  } finally {
+    await app.cleanup();
+  }
+});
+test("font readiness applies to legacy templates", async ({ page }) => {
+  const app = await harness(page, undefined, true);
+  try {
+    expect(await removeCardFontDeclarations(page, [700])).toBeGreaterThan(0);
+    await open(page, app.root);
+    const original = await app.saved();
+    await page.getByLabel("Rules text", { exact: true }).fill("Gain two focus.");
+    await page.getByRole("button", { name: "Preview editor change", exact: true }).click();
+    await expectFontFailure(page, app, original, ["title"]);
+  } finally {
+    await app.cleanup();
+  }
+});
+test("font readiness failure clears a prior pass and preserves accepted receipts", async ({
+  page,
+}) => {
+  const app = await harness(page);
+  try {
+    await open(page, app.root);
+    await page.getByLabel("Rules text", { exact: true }).fill("Gain two focus.");
+    await page.getByRole("button", { name: "Preview editor change", exact: true }).click();
+    await expect(page.getByTestId("validation-status")).toHaveAttribute("data-status", "pass");
+    await page.getByRole("button", { name: "Accept preview", exact: true }).click();
+    await expect(page.getByTestId("revision")).toHaveText("Revision 2");
+    const original = await app.saved();
+    expect(Object.keys(original.acceptedCommands).length).toBe(1);
+    await page.getByLabel("Card title", { exact: true }).fill("Pending Focus");
+    await page.getByRole("button", { name: "Preview editor change", exact: true }).click();
+    await expect(page.getByTestId("validation-status")).toHaveAttribute("data-status", "pass");
+    const id = await page.getByTestId("review-proposal-id").innerText();
+    await page
+      .getByRole("complementary", { name: "Card inspector" })
+      .getByRole("button", { name: "Return to current card", exact: true })
+      .click();
+    expect(await removeCardFontDeclarations(page, [400, 700])).toBeGreaterThan(0);
+    await page
+      .getByRole("button", { name: `Preview ${id} Card change · revision 2`, exact: true })
+      .click();
+    await expectFontFailure(page, app, original, ["body", "title"]);
+    // A disabled button alone cannot prove the older renderer-owned pass was revoked.
+    await expect(
+      page.evaluate(
+        (id) => (window as any).__TAURI_INTERNALS__.invoke("accept_proposal", { id, revision: 2 }),
+        id,
+      ),
+    ).rejects.toThrow("Editor must validate and accept the rendered preview");
+    expect(await app.saved()).toEqual(original);
+  } finally {
+    await app.cleanup();
+  }
+});
+
+test("font readiness waits for delayed faces and refuses a replaced proposal", async ({ page }) => {
+  let release!: () => void;
+  const gate = new Promise<void>((done) => (release = done));
+  const seen = new Set<number>();
+  await page.route(cardFontRequest, async (route) => {
+    seen.add(
+      Number(
+        route
+          .request()
+          .url()
+          .match(/-(400|700)-normal/)![1],
+      ),
+    );
+    await gate;
+    await route.continue();
+  });
+  const app = await harness(page);
+  try {
+    await open(page, app.root);
+    const original = await app.saved();
+    await expect.poll(() => [...seen].sort()).toEqual([400, 700]);
+    expect(
+      (
+        await app.tool("propose_change", {
+          id: "delayed-fonts",
+          expectedRevision: 1,
+          cardId: "fixture-card",
+          title: "Slow Focus",
+        })
+      ).isError,
+    ).toBe(false);
+    await page.getByRole("button", { name: /Preview delayed-fonts/ }).click();
+    await expect(page.getByTestId("review-proposal-id")).toHaveText("delayed-fonts");
+    await expect(page.locator(".workspace")).toHaveAttribute("aria-busy", "true");
+    await expect(page.getByTestId("validation-status")).toHaveAttribute("data-status", "not-run");
+    await expect(page.getByRole("button", { name: "Accept preview", exact: true })).toBeDisabled();
+    expect(await app.saved()).toEqual(original);
+    const path = join(app.root, ".artificer/requests/delayed-fonts.json");
+    const pending = JSON.parse(await readFile(path, "utf8"));
+    pending.title = "Replaced Focus";
+    await writeFile(path, JSON.stringify(pending));
+    release();
+    await expect(page.getByTestId("validation-status")).toHaveAttribute("data-status", "stale");
+    await expect(page.getByRole("button", { name: "Accept preview", exact: true })).toBeDisabled();
+    expect(
+      (await app.tool("get_proposal", { id: "delayed-fonts" })).structuredContent.validation.status,
+    ).toBe("not-run");
+    expect(await app.saved()).toEqual(original);
+    expect(
+      (
+        await app.tool("propose_change", {
+          id: "ready-fonts",
+          expectedRevision: 1,
+          cardId: "fixture-card",
+          title: "Ready Focus",
+        })
+      ).isError,
+    ).toBe(false);
+    await page.getByRole("button", { name: /Preview ready-fonts/ }).click();
+    await expect(page.getByTestId("validation-status")).toHaveAttribute("data-status", "pass");
+    await page.getByRole("button", { name: "Accept preview", exact: true }).click();
+    await expect(page.getByTestId("revision")).toHaveText("Revision 2");
+    expect((await app.saved()).cards[0].title).toBe("Ready Focus");
+  } finally {
+    release();
+    await app.cleanup();
+  }
+});
+
 test("title authoring shares measured UI/MCP review, stale refusal and undo", async ({ page }) => {
   await page.setViewportSize({ width: 1280, height: 1000 });
   const app = await harness(page);
