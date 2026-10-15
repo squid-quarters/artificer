@@ -513,8 +513,9 @@ impl Session {
         if report["status"] == "pass" && !report["diagnostics"].as_array().unwrap().is_empty() {
             return Err("Passing report contains failures".into());
         }
-        self.atomic(&format!(".artificer/requests/{id}.validation"), &json!({"revision":revision,"projectHash":proposal.expected_project_hash,"proposalHash":hash(&serde_json::to_vec(&proposal).map_err(err)?),"report":report}))?;
+        // A failed report write must not preserve an earlier acceptance proof.
         self.prepared.remove(id);
+        self.atomic(&format!(".artificer/requests/{id}.validation"), &json!({"revision":revision,"projectHash":proposal.expected_project_hash,"proposalHash":hash(&serde_json::to_vec(&proposal).map_err(err)?),"report":report}))?;
         if report["status"] == "pass" {
             self.prepared.insert(
                 id.into(),
@@ -1058,6 +1059,107 @@ mod adversarial_tests {
     }
     fn pass() -> Value {
         json!({"status":"pass","diagnostics":[],"environment":"adversarial test seam"})
+    }
+    fn failed_validation_write_revokes_prior_pass(report: Value) {
+        let (root, mut s) = setup();
+        let proposal = s
+            .propose(
+                "write-failure",
+                1,
+                "fixture-card",
+                Some("Gain two focus.".into()),
+                None,
+                "edit",
+            )
+            .unwrap();
+        s.record("write-failure", 1, proposal.clone(), pass())
+            .unwrap();
+        let project_path = root.join("project.artificer.json");
+        let original = fs::read(&project_path).unwrap();
+        let request_path = root.join(".artificer/requests/write-failure.json");
+        let pending = fs::read(&request_path).unwrap();
+        let validation_path = root.join(".artificer/requests/write-failure.validation");
+        fs::remove_file(&validation_path).unwrap();
+        // Deterministic atomic-rename failure, without changing permissions.
+        fs::create_dir(&validation_path).unwrap();
+        assert!(s
+            .record("write-failure", 1, proposal.clone(), report)
+            .is_err());
+        assert!(validation_path.is_dir());
+        let acceptance = s.acceptance("write-failure", 1);
+        let after = fs::read(&project_path).unwrap();
+        let request_after = fs::read(&request_path).unwrap();
+        if acceptance.is_ok() {
+            fs::remove_dir_all(&root).unwrap();
+            panic!("Failed validation write left the prior passing proof usable");
+        }
+        assert!(acceptance.unwrap_err().contains("Editor must validate"));
+        assert_eq!(
+            after, original,
+            "project, history and receipts must not change"
+        );
+        assert_eq!(request_after, pending, "proposal must remain pending");
+        fs::remove_dir(&validation_path).unwrap();
+        assert!(s.acceptance("write-failure", 1).is_err());
+        s.record("write-failure", 1, proposal, pass()).unwrap();
+        let saved = s.acceptance("write-failure", 1).unwrap();
+        assert_eq!(saved["revision"], 2);
+        assert_eq!(saved["history"].as_array().unwrap().len(), 1);
+        assert_eq!(saved["acceptedCommands"].as_object().unwrap().len(), 1);
+        assert_eq!(s.acceptance("write-failure", 1).unwrap(), saved);
+        fs::remove_dir_all(root).unwrap();
+    }
+    #[test]
+    fn failed_failing_validation_write_revokes_prior_pass() {
+        failed_validation_write_revokes_prior_pass(json!({
+            "status":"fail", "diagnostics":[{"code":"font-unavailable", "regionId":"body", "message":"Test seam failure"}],
+            "environment":"adversarial test seam"
+        }));
+    }
+    #[test]
+    fn failed_passing_validation_write_revokes_prior_pass() {
+        failed_validation_write_revokes_prior_pass(pass());
+    }
+    #[test]
+    fn failed_report_rewrite_cannot_authorize_from_persisted_pass() {
+        let (root, mut s) = setup();
+        let proposal = s
+            .propose(
+                "retained-pass",
+                1,
+                "fixture-card",
+                Some("Gain two focus.".into()),
+                None,
+                "edit",
+            )
+            .unwrap();
+        let project_path = root.join("project.artificer.json");
+        let original = fs::read(&project_path).unwrap();
+        let request_path = root.join(".artificer/requests/retained-pass.json");
+        let pending = fs::read(&request_path).unwrap();
+        let validation_path = root.join(".artificer/requests/retained-pass.validation");
+        for status in ["fail", "pass"] {
+            s.record("retained-pass", 1, proposal.clone(), pass())
+                .unwrap();
+            let persisted = fs::read(&validation_path).unwrap();
+            let oversized =
+                json!({"status":status,"diagnostics":[],"environment":"x".repeat(5_000_001)});
+            assert!(s
+                .record("retained-pass", 1, proposal.clone(), oversized)
+                .unwrap_err()
+                .contains("Scoped file size limit"));
+            assert_eq!(fs::read(&validation_path).unwrap(), persisted);
+            assert_eq!(s.validation("retained-pass").unwrap()["status"], "pass");
+            assert!(s
+                .acceptance("retained-pass", 1)
+                .unwrap_err()
+                .contains("Editor must validate"));
+            assert_eq!(fs::read(&project_path).unwrap(), original);
+            assert_eq!(fs::read(&request_path).unwrap(), pending);
+        }
+        s.record("retained-pass", 1, proposal, pass()).unwrap();
+        assert_eq!(s.acceptance("retained-pass", 1).unwrap()["revision"], 2);
+        fs::remove_dir_all(root).unwrap();
     }
     #[test]
     fn changed_proposal_cannot_use_prior_render_report() {

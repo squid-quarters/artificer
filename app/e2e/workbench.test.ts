@@ -351,6 +351,84 @@ test("font readiness failure clears a prior pass and preserves accepted receipts
   }
 });
 
+for (const failsLayout of [false, true]) {
+  test(`failed validation write revokes prior pass for ${failsLayout ? "failing" : "passing"} repreview`, async ({
+    page,
+  }) => {
+    const app = await harness(page);
+    try {
+      await open(page, app.root);
+      await page.getByLabel("Rules text", { exact: true }).fill("Gain two focus.");
+      await page.getByRole("button", { name: "Preview editor change", exact: true }).click();
+      await expect(page.getByTestId("validation-status")).toHaveAttribute("data-status", "pass");
+      await page.getByRole("button", { name: "Accept preview", exact: true }).click();
+      await expect(page.getByTestId("revision")).toHaveText("Revision 2");
+      const savedPath = join(app.root, "project.artificer.json");
+      const original = await readFile(savedPath, "utf8");
+      expect(Object.keys(JSON.parse(original).acceptedCommands)).toHaveLength(1);
+      await page.getByLabel("Card title", { exact: true }).fill("Pending Focus");
+      await page.getByRole("button", { name: "Preview editor change", exact: true }).click();
+      await expect(page.getByTestId("validation-status")).toHaveAttribute("data-status", "pass");
+      const id = await page.getByTestId("review-proposal-id").innerText();
+      const requestPath = join(app.root, `.artificer/requests/${id}.json`);
+      const pending = await readFile(requestPath, "utf8");
+      const validationPath = join(app.root, `.artificer/requests/${id}.validation`);
+      await page
+        .getByRole("complementary", { name: "Card inspector" })
+        .getByRole("button", { name: "Return to current card", exact: true })
+        .click();
+      await rm(validationPath);
+      await mkdir(validationPath);
+      if (failsLayout)
+        expect(await removeCardFontDeclarations(page, [400, 700])).toBeGreaterThan(0);
+      await page
+        .getByRole("button", { name: `Preview ${id} Card change · revision 2`, exact: true })
+        .click();
+      await expect(page.getByRole("alert")).toContainText("Action needs attention");
+      await expect(page.locator(".workspace")).toHaveAttribute("aria-busy", "false");
+      await expect(page.getByTestId("validation-status")).toHaveAttribute("data-status", "not-run");
+      await expect(
+        page.getByRole("button", { name: "Accept preview", exact: true }),
+      ).toBeDisabled();
+      await expect(
+        page.evaluate(
+          (id) =>
+            (window as any).__TAURI_INTERNALS__.invoke("accept_proposal", { id, revision: 2 }),
+          id,
+        ),
+      ).rejects.toThrow("Editor must validate and accept the rendered preview");
+      expect(await readFile(savedPath, "utf8")).toBe(original);
+      expect(await readFile(requestPath, "utf8")).toBe(pending);
+      await rm(validationPath, { recursive: true });
+      // Removing the I/O fault alone cannot restore the old proof.
+      await expect(
+        page.evaluate(
+          (id) =>
+            (window as any).__TAURI_INTERNALS__.invoke("accept_proposal", { id, revision: 2 }),
+          id,
+        ),
+      ).rejects.toThrow("Editor must validate and accept the rendered preview");
+      await page.reload();
+      await page.getByLabel("Project folder", { exact: true }).fill(app.root);
+      await page.getByRole("button", { name: "Open project", exact: true }).click();
+      await expect(page.getByTestId("revision")).toHaveText("Revision 2");
+      await page
+        .getByRole("button", { name: `Preview ${id} Card change · revision 2`, exact: true })
+        .click();
+      await expect(page.getByTestId("validation-status")).toHaveAttribute("data-status", "pass");
+      expect(await readFile(savedPath, "utf8")).toBe(original);
+      await page.getByRole("button", { name: "Accept preview", exact: true }).click();
+      await expect(page.getByTestId("revision")).toHaveText("Revision 3");
+      const saved = await app.saved();
+      expect(saved.cards[0].title).toBe("Pending Focus");
+      expect(saved.history).toHaveLength(2);
+      expect(Object.keys(saved.acceptedCommands)).toHaveLength(2);
+    } finally {
+      await app.cleanup();
+    }
+  });
+}
+
 test("font readiness waits for delayed faces and refuses a replaced proposal", async ({ page }) => {
   let release!: () => void;
   const gate = new Promise<void>((done) => (release = done));

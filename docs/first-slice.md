@@ -140,3 +140,13 @@ measurement. Counts are zero placeholders for this failed report; the UI says
 bundled resources and a fresh measured preview; a replaced proposal cannot use
 the earlier pending preview. No dependencies, font substitution, automatic text
 repair, font installation or print/glyph-coverage guarantee is introduced.
+
+
+## Validation report persistence failure
+
+Recording a new valid report revokes any earlier in-memory acceptance proof for
+that proposal before attempting the report write. A failed write cannot retain
+the prior authorization, even if the earlier passing report remains readable on
+disk. Restoring the write target alone does not authorize acceptance; a fresh
+successfully recorded passing preview is required. Project content, history and
+accepted receipts stay unchanged when acceptance is refused.
