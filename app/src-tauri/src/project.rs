@@ -1162,6 +1162,63 @@ mod adversarial_tests {
         fs::remove_dir_all(root).unwrap();
     }
     #[test]
+    fn asset_bytes_changed_after_preview_refuse_acceptance() {
+        for asset_name in ["grid.svg", "rings.svg"] {
+            let (root, mut s) = setup();
+            let first = s
+                .propose(
+                    "first",
+                    1,
+                    "fixture-card",
+                    Some("Gain two focus.".into()),
+                    None,
+                    "edit",
+                )
+                .unwrap();
+            s.record("first", 1, first, pass()).unwrap();
+            s.acceptance("first", 1).unwrap();
+            let proposal = s
+                .propose(
+                    "asset-timing",
+                    2,
+                    "fixture-card",
+                    Some("Gain three focus.".into()),
+                    None,
+                    "edit",
+                )
+                .unwrap();
+            s.record("asset-timing", 2, proposal.clone(), pass())
+                .unwrap();
+            let project_path = root.join("project.artificer.json");
+            let request_path = root.join(".artificer/requests/asset-timing.json");
+            let original = fs::read(&project_path).unwrap();
+            let pending = fs::read(&request_path).unwrap();
+            let asset_path = root.join("assets").join(asset_name);
+            let bytes = fs::read(&asset_path).unwrap();
+            let mut changed = bytes.clone();
+            changed.extend_from_slice(b"\n");
+            fs::write(&asset_path, changed).unwrap();
+            assert!(s
+                .acceptance("asset-timing", 2)
+                .unwrap_err()
+                .contains("Asset hash mismatch"));
+            assert!(s
+                .acceptance("first", 1)
+                .unwrap_err()
+                .contains("Asset hash mismatch"));
+            assert_eq!(fs::read(&project_path).unwrap(), original);
+            assert_eq!(fs::read(&request_path).unwrap(), pending);
+            fs::write(&asset_path, bytes).unwrap();
+            s.record("asset-timing", 2, proposal, pass()).unwrap();
+            let saved = s.acceptance("asset-timing", 2).unwrap();
+            assert_eq!(saved["revision"], 3);
+            assert_eq!(saved["history"].as_array().unwrap().len(), 2);
+            assert_eq!(saved["acceptedCommands"].as_object().unwrap().len(), 2);
+            assert_eq!(s.acceptance("asset-timing", 2).unwrap(), saved);
+            fs::remove_dir_all(root).unwrap();
+        }
+    }
+    #[test]
     fn changed_proposal_cannot_use_prior_render_report() {
         let (root, mut s) = setup();
         let old = s

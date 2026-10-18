@@ -429,6 +429,238 @@ for (const failsLayout of [false, true]) {
   });
 }
 
+test("owned asset changed after rendered pass refuses acceptance", async ({ page }) => {
+  const app = await harness(page);
+  try {
+    await open(page, app.root);
+    await page.getByLabel("Rules text", { exact: true }).fill("Gain two focus.");
+    await page.getByRole("button", { name: "Preview editor change", exact: true }).click();
+    await expect(page.getByTestId("validation-status")).toHaveAttribute("data-status", "pass");
+    await page.getByRole("button", { name: "Accept preview", exact: true }).click();
+    await expect(page.getByTestId("revision")).toHaveText("Revision 2");
+    await page.getByLabel("Rules text", { exact: true }).fill("Gain three focus.");
+    await page.getByRole("button", { name: "Preview editor change", exact: true }).click();
+    await expect(page.getByTestId("validation-status")).toHaveAttribute("data-status", "pass");
+    const id = await page.getByTestId("review-proposal-id").innerText();
+    const savedPath = join(app.root, "project.artificer.json");
+    const original = await readFile(savedPath, "utf8");
+    const requestPath = join(app.root, `.artificer/requests/${id}.json`);
+    const pending = await readFile(requestPath, "utf8");
+    const assetPath = join(app.root, "assets/grid.svg");
+    const asset = await readFile(assetPath);
+    await writeFile(assetPath, Buffer.concat([asset, Buffer.from("\n")]));
+    await expect(
+      page.evaluate(
+        (id) => (window as any).__TAURI_INTERNALS__.invoke("accept_proposal", { id, revision: 2 }),
+        id,
+      ),
+    ).rejects.toThrow("Asset hash mismatch");
+    expect(await readFile(savedPath, "utf8")).toBe(original);
+    expect(await readFile(requestPath, "utf8")).toBe(pending);
+    await expect(page.getByRole("button", { name: "Accept preview", exact: true })).toBeDisabled();
+    await writeFile(assetPath, asset);
+    await page
+      .getByRole("complementary", { name: "Card inspector" })
+      .getByRole("button", { name: "Return to current card", exact: true })
+      .click();
+    await page
+      .getByRole("button", { name: `Preview ${id} Card change · revision 2`, exact: true })
+      .click();
+    await expect(page.getByTestId("validation-status")).toHaveAttribute("data-status", "pass");
+    expect(await readFile(savedPath, "utf8")).toBe(original);
+    await page.getByRole("button", { name: "Accept preview", exact: true }).click();
+    await expect(page.getByTestId("revision")).toHaveText("Revision 3");
+    const saved = await app.saved();
+    expect(saved.history).toHaveLength(2);
+    expect(Object.keys(saved.acceptedCommands)).toHaveLength(2);
+  } finally {
+    await page.close();
+    await app.cleanup();
+  }
+});
+
+for (const [property, value] of [
+  ["left", "32px"],
+  ["top", "193px"],
+  ["width", "324px"],
+  ["height", "222px"],
+  ["transform", "translateX(8px)"],
+  ["padding-left", "8px"],
+  ["border-left", "4px solid black"],
+] as const) {
+  test(`body geometry rejects rendered ${property} drift`, async ({ page }) => {
+    const app = await harness(page);
+    try {
+      await open(page, app.root);
+      const savedPath = join(app.root, "project.artificer.json");
+      const original = await readFile(savedPath, "utf8");
+      await page.getByLabel("Rules text", { exact: true }).fill("Gain two focus.");
+      await page.getByRole("button", { name: "Preview editor change", exact: true }).click();
+      await expect(page.getByTestId("validation-status")).toHaveAttribute("data-status", "pass");
+      const id = await page.getByTestId("review-proposal-id").innerText();
+      const requestPath = join(app.root, `.artificer/requests/${id}.json`);
+      const pending = await readFile(requestPath, "utf8");
+      await page
+        .getByRole("complementary", { name: "Card inspector" })
+        .getByRole("button", { name: "Return to current card", exact: true })
+        .click();
+      const css = await page.addStyleTag({
+        content: `[data-testid="card-body"] { ${property}: ${value} !important; }`,
+      });
+      const geometry = () =>
+        page.getByTestId("card-body").evaluate((el) => {
+          const body = el.getBoundingClientRect(),
+            frame = el.closest("article")!.getBoundingClientRect();
+          const article = el.closest("article")!;
+          const style = getComputedStyle(el);
+          const left = parseFloat(style.borderLeftWidth) + parseFloat(style.paddingLeft);
+          const top = parseFloat(style.borderTopWidth) + parseFloat(style.paddingTop);
+          const right = parseFloat(style.borderRightWidth) + parseFloat(style.paddingRight);
+          const bottom = parseFloat(style.borderBottomWidth) + parseFloat(style.paddingBottom);
+          return {
+            left: body.left - frame.left - article.clientLeft + left,
+            top: body.top - frame.top - article.clientTop + top,
+            width: body.width - left - right,
+            height: body.height - top - bottom,
+          };
+        });
+      const declared = JSON.parse(original).templates[0].body;
+      const expected = {
+        left: declared.x,
+        top: declared.y,
+        width: declared.width,
+        height: declared.height,
+      };
+      const assertDrift = async () => {
+        const actual = await geometry();
+        expect(Object.values(actual).every(Number.isFinite)).toBe(true);
+        expect(
+          Math.max(
+            ...Object.entries(expected).map(([key, value]) =>
+              Math.abs(actual[key as keyof typeof actual] - value),
+            ),
+          ),
+        ).toBeGreaterThan(0.5);
+      };
+      await assertDrift();
+      await page
+        .getByRole("button", { name: `Preview ${id} Card change · revision 1`, exact: true })
+        .click();
+      await assertDrift();
+      await expect(page.getByTestId("validation-status")).toHaveAttribute("data-status", "fail");
+      const report = (await app.tool("get_proposal", { id })).structuredContent.validation;
+      expect(report.diagnostics).toContainEqual(
+        expect.objectContaining({ code: "body-region", regionId: "body" }),
+      );
+      expect(report.diagnostics.map((d: any) => d.code)).not.toContain("font-unavailable");
+      await expect(
+        page.getByRole("button", { name: "Accept preview", exact: true }),
+      ).toBeDisabled();
+      await expect(
+        page.evaluate(
+          (id) =>
+            (window as any).__TAURI_INTERNALS__.invoke("accept_proposal", { id, revision: 1 }),
+          id,
+        ),
+      ).rejects.toThrow("Editor must validate");
+      expect(await readFile(savedPath, "utf8")).toBe(original);
+      expect(await readFile(requestPath, "utf8")).toBe(pending);
+      await css.evaluate((el) => {
+        el.parentNode?.removeChild(el);
+      });
+      await page
+        .getByRole("complementary", { name: "Card inspector" })
+        .getByRole("button", { name: "Return to current card", exact: true })
+        .click();
+      await page
+        .getByRole("button", { name: `Preview ${id} Card change · revision 1`, exact: true })
+        .click();
+      await expect(page.getByTestId("validation-status")).toHaveAttribute("data-status", "pass");
+      expect(await readFile(savedPath, "utf8")).toBe(original);
+      await page.getByRole("button", { name: "Accept preview", exact: true }).click();
+      await expect(page.getByTestId("revision")).toHaveText("Revision 2");
+      expect((await app.saved()).cards[0].body).toBe("Gain two focus.");
+    } finally {
+      await page.close();
+      await app.cleanup();
+    }
+  });
+}
+
+test("body content overflow cannot hide in compensated padding", async ({ page }) => {
+  const app = await harness(page);
+  try {
+    await open(page, app.root);
+    const original = await readFile(join(app.root, "project.artificer.json"), "utf8");
+    await page.addStyleTag({
+      content:
+        '[data-testid="card-body"] { height:250px !important; padding-bottom:40px !important; box-sizing:border-box !important; }',
+    });
+    await page.getByLabel("Rules text", { exact: true }).fill("Gain two focus.");
+    await page.getByRole("button", { name: "Preview editor change", exact: true }).click();
+    await expect(page.getByTestId("validation-status")).toHaveAttribute("data-status", "pass");
+    const text = Array(9).fill("Gain two focus.").join("\n");
+    expect(
+      (
+        await app.tool("propose_change", {
+          id: "padding-overflow",
+          expectedRevision: 1,
+          cardId: "fixture-card",
+          body: text,
+        })
+      ).isError,
+    ).toBe(false);
+    await page.getByRole("button", { name: /Preview padding-overflow/ }).click();
+    await expect(page.getByTestId("review-proposal-id")).toHaveText("padding-overflow");
+    await expect(page.getByTestId("validation-status")).toHaveAttribute("data-status", /pass|fail/);
+    const measured = await page.getByTestId("card-body").evaluate((el) => {
+      const box = el.getBoundingClientRect(),
+        article = el.closest("article")!,
+        frame = article.getBoundingClientRect();
+      const style = getComputedStyle(el);
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      return {
+        x: box.left - frame.left - article.clientLeft,
+        y: box.top - frame.top - article.clientTop,
+        width: box.width,
+        contentHeight: box.height - parseFloat(style.paddingBottom),
+        font: parseFloat(style.fontSize),
+        textBottom: Math.max(...Array.from(range.getClientRects()).map((r) => r.bottom)) - box.top,
+        borderHeight: box.height,
+      };
+    });
+    expect(measured.x).toBeCloseTo(24);
+    expect(measured.y).toBeCloseTo(185);
+    expect(measured.width).toBeCloseTo(312);
+    expect(measured.contentHeight).toBeCloseTo(210);
+    expect(measured.font).toBe(18);
+    expect(measured.textBottom).toBeGreaterThan(measured.contentHeight + 0.5);
+    expect(measured.textBottom).toBeLessThan(measured.borderHeight - 0.5);
+    const report = (await app.tool("get_proposal", { id: "padding-overflow" })).structuredContent
+      .validation;
+    expect(report.diagnostics.map((d: any) => d.code)).not.toContain("body-region");
+    expect(report.diagnostics.map((d: any) => d.code)).not.toContain("widow");
+    expect(report.status).toBe("fail");
+    expect(report.diagnostics).toContainEqual(
+      expect.objectContaining({ code: "overflow", regionId: "body" }),
+    );
+    await expect(page.getByRole("button", { name: "Accept preview", exact: true })).toBeDisabled();
+    await expect(
+      page.evaluate(() =>
+        (window as any).__TAURI_INTERNALS__.invoke("accept_proposal", {
+          id: "padding-overflow",
+          revision: 1,
+        }),
+      ),
+    ).rejects.toThrow("Editor must validate");
+    expect(await readFile(join(app.root, "project.artificer.json"), "utf8")).toBe(original);
+  } finally {
+    await page.close();
+    await app.cleanup();
+  }
+});
+
 test("font readiness waits for delayed faces and refuses a replaced proposal", async ({ page }) => {
   let release!: () => void;
   const gate = new Promise<void>((done) => (release = done));
