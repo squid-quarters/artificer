@@ -64,8 +64,40 @@ export async function measure(body: HTMLElement, template: Template): Promise<Va
   }
   await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
   const bounds = body.getBoundingClientRect();
+  const contentBounds = { left: bounds.left, right: bounds.right, bottom: bounds.bottom };
   const diagnostics: Diagnostic[] = [];
   const article = body.closest("article");
+  if (article) {
+    const frame = article.getBoundingClientRect();
+    const frameStyle = getComputedStyle(article);
+    const style = getComputedStyle(body);
+    const inset = (side: string) =>
+      Number.parseFloat(style.getPropertyValue(`border-${side}-width`)) +
+      Number.parseFloat(style.getPropertyValue(`padding-${side}`));
+    const left = inset("left"),
+      top = inset("top");
+    contentBounds.left += left;
+    contentBounds.right -= inset("right");
+    contentBounds.bottom -= inset("bottom");
+    const actual = [
+      bounds.left - frame.left - Number.parseFloat(frameStyle.borderLeftWidth) + left,
+      bounds.top - frame.top - Number.parseFloat(frameStyle.borderTopWidth) + top,
+      bounds.width - left - inset("right"),
+      bounds.height - top - inset("bottom"),
+    ];
+    const region = template.body;
+    const expected = [region.x, region.y, region.width, region.height];
+    if (
+      actual.some(
+        (value, index) => !Number.isFinite(value) || Math.abs(value - expected[index]) > 0.5,
+      )
+    )
+      diagnostics.push({
+        code: "body-region",
+        regionId: "body",
+        message: "Rendered body content differs from its declared bounds.",
+      });
+  }
   const symbol = article?.querySelector<HTMLElement>('[data-testid="shared-symbol"]');
   if (
     !article ||
@@ -193,9 +225,9 @@ export async function measure(body: HTMLElement, template: Template): Promise<Va
         if (!words.includes(`${word.index}:${word[0]}`)) words.push(`${word.index}:${word[0]}`);
         lines.set(row, words);
         if (
-          rect.right > bounds.right + 0.5 ||
-          rect.bottom > bounds.bottom + 0.5 ||
-          rect.left < bounds.left - 0.5
+          rect.right > contentBounds.right + 0.5 ||
+          rect.bottom > contentBounds.bottom + 0.5 ||
+          rect.left < contentBounds.left - 0.5
         ) {
           if (!diagnostics.some((d) => d.code === "overflow"))
             diagnostics.push({

@@ -150,3 +150,19 @@ the prior authorization, even if the earlier passing report remains readable on
 disk. Restoring the write target alone does not authorize acceptance; a fresh
 successfully recorded passing preview is required. Project content, history and
 accepted receipts stay unchanged when acceptance is refused.
+
+
+## Declared body geometry and asset integrity
+
+The measured body content box must match its template's declared position and
+size within the existing half-pixel preview tolerance. Checks account for the
+card border and body padding/borders; rendered drift, including translation,
+produces a body-region failure and blocks acceptance. Text overflow uses that
+content box too, so padding cannot enlarge the approved text region. The template geometry,
+font/fit/widow policies and editor acceptance authority are unchanged.
+
+Existing asset hashing also rejects changed owned SVG bytes between preview and
+acceptance, even when project JSON is unchanged. Regression coverage verifies
+saved project/history/receipt and pending-proposal preservation, then recovery
+through restored original bytes and a fresh valid preview. No asset import,
+print profile or broader design scope is introduced.
