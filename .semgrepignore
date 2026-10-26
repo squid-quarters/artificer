@@ -1,0 +1,8 @@
+.git/
+node_modules/
+app/src-tauri/target/
+app/.svelte-kit/
+app/build/
+app/storybook-static/
+test-results/
+.semgrep/tests/

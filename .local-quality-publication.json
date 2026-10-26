@@ -1,0 +1,8 @@
+{
+  "roots": ["370ca99124d43c817b4ba5c691c71e92abc9c41a"],
+  "assets": {
+    "app/src-tauri/icons/icon.png": "d8b58f10d920880365e6cd73a8b9eb0e9185ba35c1e6a3b3ae7e85e160420db6",
+    "fixtures/neutral-project/assets/grid.svg": "4aafc585e3ff284ba8e4e449b62897e36443bb683ab334a567141fadafe066fd",
+    "fixtures/neutral-project/assets/rings.svg": "a47cecfdf38ebd80326ad573c9b3f02d7a8d8796c5518091e0cc8742650e797a"
+  }
+}

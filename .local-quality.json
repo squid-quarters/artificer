@@ -1,0 +1,61 @@
+{
+  "tools": [
+    ["git", "--version"],
+    ["cargo", "--version"],
+    ["rustc", "--version"],
+    ["docker", "--version"]
+  ],
+  "commands": [
+    ["npm", "ci", "--ignore-scripts", "--no-audit", "--no-fund"],
+    ["npm", "run", "test:quality"],
+    ["node_modules/.bin/oxlint", ".github/scripts"],
+    [
+      "node_modules/.bin/oxfmt",
+      "--check",
+      ".github/scripts",
+      ".local-quality.json",
+      "package.json"
+    ],
+    ["npm", "run", "check"],
+    ["npm", "run", "lint"],
+    ["npm", "run", "format:check"],
+    ["npm", "run", "test:unit", "-w", "app", "--", "--run"],
+    [
+      "cargo",
+      "test",
+      "--locked",
+      "--manifest-path",
+      "app/src-tauri/Cargo.toml",
+      "--features",
+      "test-bridge"
+    ],
+    [
+      "cargo",
+      "build",
+      "--locked",
+      "--manifest-path",
+      "app/src-tauri/Cargo.toml",
+      "--features",
+      "test-bridge"
+    ],
+    [
+      "cargo",
+      "clippy",
+      "--locked",
+      "--manifest-path",
+      "app/src-tauri/Cargo.toml",
+      "--all-targets",
+      "--features",
+      "test-bridge",
+      "--",
+      "-D",
+      "warnings"
+    ],
+    ["npm", "run", "test:e2e", "-w", "app", "--", "--retries=0"],
+    ["npm", "run", "build-storybook", "-w", "app"],
+    ["npm", "run", "tauri", "-w", "app", "--", "build", "--debug", "--no-bundle", "--ci"],
+    ["node", ".github/scripts/check-production-boundary.mjs"],
+    ["node", ".github/scripts/check-publication.mjs"],
+    ["npm", "run", "security:quality"]
+  ]
+}

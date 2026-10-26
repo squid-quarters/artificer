@@ -81,3 +81,12 @@ Documentation-only process changes require independent review, link/format and
 publication/ancestry checks; they do not authorize native input or require a
 repeat of completed source suites. Preserve incident evidence outside the public
 tree and keep verified, failed and unverified outcomes distinct.
+
+## Full local commit gate
+
+Use Node24.22.1, pinned npm and the complete staged-tree gate described in
+[local quality](docs/local-quality.md). Install it per owned worktree with
+`npm run quality:install`; do not overwrite another hook manager or bypass it.
+The gate includes existing Rust and headless browser/MCP acceptance. It does not
+launch a native window or replace the separate native interaction process.
+No push, hosted CI run, deployment or publication is authorized by a local pass.
