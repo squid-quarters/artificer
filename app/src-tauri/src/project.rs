@@ -62,6 +62,13 @@ pub struct Proposal {
     pub title: Option<String>,
 }
 #[derive(Default)]
+pub struct ProposalEdit {
+    pub body: Option<String>,
+    pub variant_id: Option<String>,
+    pub title: Option<String>,
+}
+
+#[derive(Default)]
 pub struct Session {
     pub root: Option<crate::scoped_fs::Root>,
     prepared: HashMap<String, (u64, String, String)>,
@@ -184,7 +191,7 @@ impl Session {
                 for key in ["x", "y", "width", "height"] {
                     if !region[key]
                         .as_f64()
-                        .is_some_and(|v| v >= 0.0 && v <= 2000.0)
+                        .is_some_and(|v| (0.0..=2000.0).contains(&v))
                     {
                         return Err("Invalid title region".into());
                     }
@@ -362,18 +369,31 @@ impl Session {
         variant_id: Option<String>,
         kind: &str,
     ) -> Result<Proposal> {
-        self.propose_with_title(id, revision, card_id, body, variant_id, kind, None)
+        self.propose_with_title(
+            id,
+            revision,
+            card_id,
+            ProposalEdit {
+                body,
+                variant_id,
+                title: None,
+            },
+            kind,
+        )
     }
     pub fn propose_with_title(
         &self,
         id: &str,
         revision: u64,
         card_id: &str,
-        body: Option<String>,
-        variant_id: Option<String>,
+        edits: ProposalEdit,
         kind: &str,
-        title: Option<String>,
     ) -> Result<Proposal> {
+        let ProposalEdit {
+            body,
+            variant_id,
+            title,
+        } = edits;
         let _lock = self.lock()?;
         let path = Self::proposal_path(id)?;
         if self.root()?.exists(&path)? {
@@ -633,10 +653,12 @@ impl Session {
                 &format!("editor-{}", nonce()),
                 args["revision"].as_u64().ok_or("Missing revision")?,
                 args["cardId"].as_str().ok_or("Missing card ID")?,
-                optional_string(args, "body")?,
-                optional_string(args, "variantId")?,
+                ProposalEdit {
+                    body: optional_string(args, "body")?,
+                    variant_id: optional_string(args, "variantId")?,
+                    title: optional_string(args, "title")?,
+                },
                 args["kind"].as_str().unwrap_or("edit"),
-                optional_string(args, "title")?,
             )?)
             .map_err(err),
             _ => Err("Unknown editor command".into()),
@@ -713,10 +735,12 @@ mod tests {
                 "title-edit",
                 1,
                 "fixture-card",
-                None,
-                None,
+                ProposalEdit {
+                    body: None,
+                    variant_id: None,
+                    title: Some("New Focus".into()),
+                },
                 "edit",
-                Some("New Focus".into()),
             )
             .unwrap();
         assert!(s.acceptance("title-edit", 1).is_err());
@@ -725,10 +749,12 @@ mod tests {
                 "title-edit",
                 1,
                 "fixture-card",
-                None,
-                None,
-                "edit",
-                Some("Other Focus".into())
+                ProposalEdit {
+                    body: None,
+                    variant_id: None,
+                    title: Some("Other Focus".into())
+                },
+                "edit"
             )
             .is_err());
         s.record("title-edit", 1, proposal.clone(), pass()).unwrap();
@@ -813,10 +839,12 @@ mod tests {
                 "no-region",
                 2,
                 "fixture-card",
-                None,
-                None,
-                "edit",
-                Some("New title".into())
+                ProposalEdit {
+                    body: None,
+                    variant_id: None,
+                    title: Some("New title".into())
+                },
+                "edit"
             )
             .unwrap_err()
             .contains("declared template region"));
@@ -829,10 +857,12 @@ mod tests {
             "boundary",
             1,
             "fixture-card",
-            None,
-            None,
+            ProposalEdit {
+                body: None,
+                variant_id: None,
+                title: Some("é".repeat(10_000)),
+            },
             "edit",
-            Some("é".repeat(10_000)),
         )
         .unwrap();
         assert!(s
@@ -840,10 +870,12 @@ mod tests {
                 "oversized",
                 1,
                 "fixture-card",
-                None,
-                None,
-                "edit",
-                Some("é".repeat(10_001))
+                ProposalEdit {
+                    body: None,
+                    variant_id: None,
+                    title: Some("é".repeat(10_001))
+                },
+                "edit"
             )
             .is_err());
         let mut pending = s.get_proposal("boundary").unwrap();

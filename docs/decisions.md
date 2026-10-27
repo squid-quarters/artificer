@@ -44,3 +44,11 @@ is excluded. The neutral fixture does not settle the comprehensive design brief.
     Overflow rejects acceptance; no automatic shrinking or rewriting. Bounds and
     typography are explicit fixture fields. Legacy compatibility is retained;
     footer/body policy, print, assets and multiple-card scope remain unchanged.
+
+
+11. **Read-only inspector sketch — approved:** a local interactive prototype
+    within the established A+C workbench, using existing neutral fixtures,
+    declared constraints and local DOM evidence. Region selection/highlighting
+    and comparison do not edit cards or register acceptance proofs. Integration
+    into the editor, arbitrary template design, publication and deployment are
+    separate steps. See [prototype boundary](inspector-prototype.md).

@@ -84,3 +84,10 @@ and choices that gate broader work. All integration uses independently reviewed
 PRs with fixes and final checks.
 The old prototype, its unattributed samples, bundled skills and private recovery
 history remain preserved separately and are absent from this source ancestry.
+
+## Local read-only inspector sketch
+
+The approved [constraint/evidence prototype](docs/inspector-prototype.md) is available
+at `/inspector` in a local preview. It uses in-memory neutral examples and actual
+DOM reports, with no project commands or acceptance authority. The editor remains
+at `/`; this sketch is not integrated into its mutation workflow.

@@ -1,4 +1,4 @@
-use crate::project::Session;
+use crate::project::{ProposalEdit, Session};
 use serde_json::{json, Value};
 use std::io::{self, BufRead, Read, Write};
 fn tool(name: &str, description: &str, properties: Value, required: &[&str]) -> Value {
@@ -71,14 +71,16 @@ fn call(session: &mut Session, name: &str, args: &Value) -> Result<Value, String
                 id()?,
                 rev()?,
                 args["cardId"].as_str().ok_or("Missing card ID")?,
-                body,
-                variant,
-                "edit",
-                if args["title"].is_null() {
-                    None
-                } else {
-                    Some(args["title"].as_str().ok_or("Invalid title")?.to_string())
+                ProposalEdit {
+                    body,
+                    variant_id: variant,
+                    title: if args["title"].is_null() {
+                        None
+                    } else {
+                        Some(args["title"].as_str().ok_or("Invalid title")?.to_string())
+                    },
                 },
+                "edit",
             )?)
             .map_err(|e| e.to_string())
         }
