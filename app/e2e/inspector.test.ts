@@ -203,3 +203,140 @@ test("narrow inspector keeps controls visible and supports keyboard canvas panni
   ).toBeEnabled();
   await capture(page, "inspector-narrow");
 });
+
+test("narrow inspector header preserves user text spacing without clipping", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await open(page);
+  await expect(page.locator(".app-header")).toHaveCSS("height", "64px");
+  await page.setViewportSize({ width: 320, height: 1000 });
+  await expect(page.locator(".app-header")).toHaveCSS("height", "64px");
+  const body = page.getByTestId("inspector-proposed").getByTestId("card-body");
+  const geometry = () =>
+    body.evaluate((el) => {
+      const rect = el.getBoundingClientRect();
+      const frame = el.closest("article")!.getBoundingClientRect();
+      return {
+        x: rect.left - frame.left,
+        y: rect.top - frame.top,
+        width: rect.width,
+        height: rect.height,
+        font: getComputedStyle(el).fontSize,
+      };
+    });
+  const before = await geometry();
+  await page.addStyleTag({
+    content: `
+    :is(.app-header, .demo-notice, .context, .canvas-toolbar, .snapshot-bar, .diagnostics, .inspector),
+    :is(.app-header, .demo-notice, .context, .canvas-toolbar, .snapshot-bar, .diagnostics, .inspector) * {
+      line-height: 1.5 !important; letter-spacing: .12em !important; word-spacing: .16em !important;
+    }
+    p { margin-bottom: 2em !important; }
+  `,
+  });
+  const layout = await page.evaluate(() => {
+    const badge = document.querySelector(".prototype-tag")!.getBoundingClientRect();
+    const header = document.querySelector(".app-header")!.getBoundingClientRect();
+    const brand = document.querySelector(".brand")!.getBoundingClientRect();
+    const spacing = getComputedStyle(document.querySelector(".prototype-tag")!);
+    return {
+      pageWidth: document.documentElement.scrollWidth,
+      viewport: innerWidth,
+      letterSpacing: Number.parseFloat(spacing.letterSpacing),
+      wordSpacing: Number.parseFloat(spacing.wordSpacing),
+      lineHeight: Number.parseFloat(spacing.lineHeight),
+      brandLeft: brand.left,
+      brandRight: brand.right,
+      brandTop: brand.top,
+      brandBottom: brand.bottom,
+      badgeTop: badge.top,
+      headerTop: header.top,
+      headerHeight: header.height,
+      nonOverlapping:
+        brand.right <= badge.left ||
+        badge.right <= brand.left ||
+        brand.bottom <= badge.top ||
+        badge.bottom <= brand.top,
+      badgeLeft: badge.left,
+      badgeRight: badge.right,
+      badgeBottom: badge.bottom,
+      headerLeft: header.left,
+      headerRight: header.right,
+      headerBottom: header.bottom,
+    };
+  });
+  expect(layout.letterSpacing).toBeCloseTo(1.44);
+  expect(layout.wordSpacing).toBeCloseTo(1.92);
+  expect(layout.lineHeight).toBe(18);
+  expect(layout.headerHeight).toBeGreaterThan(64);
+  expect(layout.nonOverlapping).toBe(true);
+  expect(layout.brandLeft).toBeGreaterThanOrEqual(layout.headerLeft);
+  expect(layout.brandRight).toBeLessThanOrEqual(layout.headerRight);
+  expect(layout.brandTop).toBeGreaterThanOrEqual(layout.headerTop);
+  expect(layout.brandBottom).toBeLessThanOrEqual(layout.headerBottom);
+  expect(layout.badgeTop).toBeGreaterThanOrEqual(layout.headerTop);
+  expect(layout.pageWidth).toBeLessThanOrEqual(layout.viewport);
+  expect(layout.badgeLeft).toBeGreaterThanOrEqual(layout.headerLeft);
+  expect(layout.badgeRight).toBeLessThanOrEqual(layout.headerRight);
+  expect(layout.badgeBottom).toBeLessThanOrEqual(layout.headerBottom);
+  expect(await geometry()).toEqual(before);
+  await page.getByRole("button", { name: "Compare current and proposed", exact: true }).click();
+  await expect(
+    page.getByRole("region", { name: "Current example card", exact: true }),
+  ).toBeVisible();
+  expect(await geometry()).toEqual(before);
+  await capture(page, "inspector-user-text-spacing");
+});
+
+test("fixture identity failure is explicit and a reload recovers without project commands", async ({
+  page,
+}) => {
+  const rawFixture = await readFile("../fixtures/neutral-project/project.artificer.json", "utf8");
+  const pageErrors: string[] = [];
+  let rawDigestCalls = 0;
+  page.on("pageerror", (error) => pageErrors.push(String(error)));
+  await page.exposeFunction("rejectFixtureDigestOnce", () => ++rawDigestCalls === 1);
+  await page.addInitScript((raw: string) => {
+    const nativeDigest = crypto.subtle.digest.bind(crypto.subtle);
+    crypto.subtle.digest = async (algorithm, data) => {
+      if (
+        new TextDecoder().decode(data) === raw &&
+        (await (window as any).rejectFixtureDigestOnce())
+      )
+        throw new Error("Controlled fixture identity failure");
+      return nativeDigest(algorithm, data);
+    };
+    (window as any).__fixtureFailureCalls = [];
+    (window as any).__TAURI_INTERNALS__ = {
+      invoke: (...args: any[]) => {
+        (window as any).__fixtureFailureCalls.push(args);
+        throw new Error("No project commands allowed");
+      },
+    };
+  }, rawFixture);
+  await open(page);
+  await expect(page.getByTestId("source-fixture-hash")).toHaveText("Unavailable");
+  await expect(page.getByText("Fixture identity unavailable", { exact: true })).toBeVisible();
+  await page.getByText("Fixture identity unavailable", { exact: true }).click();
+  await expect(page.getByTestId("fixture-identity-error")).toContainText(
+    "Reload this local preview to retry",
+  );
+  await expect(page.getByTestId("example-snapshot-hash")).toHaveText(/^[0-9a-f]{64}$/);
+  const measuredHash = await page.getByTestId("example-snapshot-hash").textContent();
+  expect(rawDigestCalls).toBe(1);
+  expect(pageErrors).toEqual([]);
+  expect(await page.evaluate(() => (window as any).__fixtureFailureCalls)).toEqual([]);
+  await capture(page, "inspector-fixture-identity-unavailable");
+  await page.reload();
+  await expect(page.getByTestId("inspector-status")).toHaveAttribute("data-status", "pass");
+  await expect(page.getByTestId("source-fixture-hash")).toHaveText(
+    createHash("sha256").update(rawFixture).digest("hex"),
+  );
+  await expect(page.getByTestId("fixture-identity-error")).toHaveCount(0);
+  await expect(page.getByTestId("example-snapshot-hash")).toHaveText(measuredHash!);
+  expect(rawDigestCalls).toBe(2);
+  expect(pageErrors).toEqual([]);
+  expect(await page.evaluate(() => (window as any).__fixtureFailureCalls)).toEqual([]);
+  expect(await readFile("../fixtures/neutral-project/project.artificer.json", "utf8")).toBe(
+    rawFixture,
+  );
+});
