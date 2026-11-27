@@ -39,6 +39,7 @@
   let busy = $state(true);
   let error = $state('');
   let fixtureHash = $state('');
+  let fixtureHashFailed = $state(false);
   let bodyRef = $state<HTMLElement>();
   let report = $state<Validation>();
   let reportIdentity = $state<{scenario: Scenario; snapshotHash: string}>();
@@ -82,11 +83,14 @@
     await tick(); regionHeading?.focus();
   }
   onMount(() => {
+    let active = true;
     void crypto.subtle.digest('SHA-256',new TextEncoder().encode(rawProject)).then(bytes => {
-      fixtureHash = Array.from(new Uint8Array(bytes),b=>b.toString(16).padStart(2,'0')).join('');
+      if (active) fixtureHash = Array.from(new Uint8Array(bytes),b=>b.toString(16).padStart(2,'0')).join('');
+    }).catch(() => {
+      if (active) fixtureHashFailed = true;
     });
     void choose('passing');
-    return () => { generation++; };
+    return () => { active = false; generation++; };
   });
 </script>
 
@@ -133,7 +137,7 @@
     </section>
   </main>
   <aside class="inspector" aria-label="Read-only constraints and evidence">
-    <div class="context-section"><p class="eyebrow">Frozen proposal snapshot</p><h2>Constraints &amp; evidence</h2><p class="hint">Template {template.id} · demo-{scenario} · base revision 1</p><details><summary>Fixture identity</summary><p class="hash-label">SHA-256 of original fixture bytes</p><code class="hash" data-testid="source-fixture-hash">{fixtureHash || 'Calculating…'}</code><p class="hash-label">Measured example snapshot · serialized in memory</p><code class="hash" data-testid="example-snapshot-hash">{reportIdentity?.snapshotHash ?? 'Not measured for this selection'}</code><p class="hint">{reportIdentity ? `demo-${reportIdentity.scenario} · base revision 1` : 'Measurement pending'}. No live project identity or acceptance proof is issued.</p></details></div>
+    <div class="context-section"><p class="eyebrow">Frozen proposal snapshot</p><h2>Constraints &amp; evidence</h2><p class="hint">Template {template.id} · demo-{scenario} · base revision 1</p><details><summary>Fixture identity{fixtureHashFailed ? ' unavailable' : ''}</summary><p class="hash-label">SHA-256 of original fixture bytes</p><code class="hash" data-testid="source-fixture-hash">{fixtureHash || (fixtureHashFailed ? 'Unavailable' : 'Calculating…')}</code>{#if fixtureHashFailed}<p class="hint" role="status" data-testid="fixture-identity-error">The fixture fingerprint is unavailable. Reload this local preview to retry. The measured example snapshot is separate; no live project identity or acceptance proof is issued.</p>{/if}<p class="hash-label">Measured example snapshot · serialized in memory</p><code class="hash" data-testid="example-snapshot-hash">{reportIdentity?.snapshotHash ?? 'Not measured for this selection'}</code><p class="hint">{reportIdentity ? `demo-${reportIdentity.scenario} · base revision 1` : 'Measurement pending'}. No live project identity or acceptance proof is issued.</p></details></div>
     <div class="region-picker" role="group" aria-label="Inspect region">{#each ['title','body','symbol'] as id}<button aria-pressed={region === id} class:chosen={region === id} onclick={() => region = id as Region}>{id === 'title' ? 'Title' : id === 'body' ? 'Body' : 'Symbol'}</button>{/each}</div>
     <div class="region-detail"><div class="section-heading"><h3 bind:this={regionHeading} tabindex="-1">{region === 'body' ? 'Rules text' : region === 'title' ? 'Card title' : 'Shared symbol'}</h3><span class="declared-tag">Inherited</span></div>
       {#if selectedBounds}<dl><div><dt>Position</dt><dd>{selectedBounds.x}, {selectedBounds.y} logical px</dd></div><div><dt>Region</dt><dd>{selectedBounds.width} × {selectedBounds.height} logical px</dd></div></dl>{/if}
@@ -203,5 +207,5 @@
   .region-evidence {border-top:1px solid var(--line);margin-top:24px;padding-top:20px;}.region-evidence h4 {font-size:14px;margin:8px 0;}.region-evidence ul {padding-left:18px;font-size:13px;line-height:1.7;}
   .legacy-note {padding:12px;background:var(--surface);line-height:1.7;font-size:13px;}
   @media(max-width:1050px) {.inspector-demo {grid-template-columns:200px minmax(0,1fr);}.inspector {grid-column:1/-1;border-top:1px solid var(--line);}.region-detail {max-width:650px;}}
-  @media(max-width:650px) {.inspector-demo {display:block;}.scenario-list {grid-template-columns:1fr 1fr;}.scope {margin-top:12px;}.canvas-toolbar {align-items:flex-start;gap:14px;flex-direction:column;}.main-workspace {padding:18px 14px;}.demo-notice {padding:10px 16px;}.app-kind {display:none;}}
+  @media(max-width:650px) {.app-header {height:auto;min-height:64px;flex-wrap:wrap;padding-top:12px;padding-bottom:12px;}.inspector-demo {display:block;}.scenario-list {grid-template-columns:1fr 1fr;}.scope {margin-top:12px;}.canvas-toolbar {align-items:flex-start;gap:14px;flex-direction:column;}.main-workspace {padding:18px 14px;}.demo-notice {padding:10px 16px;}.app-kind {display:none;}}
 </style>
